@@ -19,4 +19,4 @@ conform.formatters.stylua = {
     prepend_args = { "--column-width", "100" },
 }
 
-vim.keymap.set("n", "<leader>f", function() conform.format() end)
+vim.keymap.set("", "<leader>f", function() conform.format() end)
