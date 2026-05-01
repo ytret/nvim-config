@@ -23,17 +23,33 @@ local function def_in_other_win()
             print(err)
             return
         end
-        if result == nil or #result == 0 then
+        if result == nil then
             print("No definitions found")
             return
+        end
+
+        local def = result
+        if vim.islist(result) then
+            if #result == 0 then
+                print("No definitions found")
+                return
+            end
+            def = result[1]
         end
 
         local target_win = other_or_new_win()
         vim.api.nvim_set_current_win(target_win)
 
-        local def_bufnr = vim.uri_to_bufnr(result[1].uri)
-        local def_row = result[1].range.start.line + 1
-        local def_col = result[1].range.start.character
+        local def_uri = def.uri or def.targetUri
+        local def_range = def.targetSelectionRange or def.range or def.targetRange
+        if def_uri == nil or def_range == nil then
+            print("Definition result has unsupported shape")
+            return
+        end
+
+        local def_bufnr = vim.uri_to_bufnr(def_uri)
+        local def_row = def_range.start.line + 1
+        local def_col = def_range.start.character
         vim.api.nvim_set_current_buf(def_bufnr)
         vim.api.nvim_win_set_cursor(target_win, { def_row, def_col })
         vim.fn.feedkeys("zz")
