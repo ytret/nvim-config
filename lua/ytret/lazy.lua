@@ -111,6 +111,16 @@ require("lazy").setup({
             "nvim-lua/plenary.nvim", -- optional
         },
     },
+    {
+        "f-person/git-blame.nvim",
+        name = "git-blame",
+        event = "VeryLazy",
+        opts = {
+            enabled = false,
+            message_template = " <sha> <date> <author>: <summary>",
+            date_format = "%Y-%m-%d",
+        },
+    },
 
     -- Редактирование
     { "theprimeagen/harpoon" },
