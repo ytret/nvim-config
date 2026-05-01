@@ -42,7 +42,7 @@ require("lazy").setup({
         opts = {
             styles = {
                 comments = { italic = false },
-                -- keywords = { italic = false },
+                keywords = { italic = false },
             },
         },
     },
