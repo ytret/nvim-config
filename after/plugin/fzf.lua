@@ -3,6 +3,7 @@ local fzf = require("fzf-lua")
 -- Session/project-scope commands
 vim.keymap.set("n", "<M-p>", fzf.buffers, {})
 vim.keymap.set("n", "<C-p>", fzf.files, {})
+vim.keymap.set("n", "<C-k>", function() fzf.files({ no_ignore = true }) end, {})
 vim.keymap.set("n", "<leader>ps", fzf.live_grep, {})
 
 -- LSP: project-scope
