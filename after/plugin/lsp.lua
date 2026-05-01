@@ -23,7 +23,7 @@ local function def_in_other_win()
             print(err)
             return
         end
-        if #result == 0 then
+        if result == nil or #result == 0 then
             print("No definitions found")
             return
         end
