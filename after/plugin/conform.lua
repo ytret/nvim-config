@@ -18,5 +18,8 @@ conform.formatters.black = {
 conform.formatters.stylua = {
     prepend_args = { "--column-width", "100" },
 }
+conform.formatters.nixfmt = {
+    prepend_args = { "--width", "80" },
+}
 
 vim.keymap.set("", "<leader>f", function() conform.format() end)
