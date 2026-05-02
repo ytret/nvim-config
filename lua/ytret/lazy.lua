@@ -117,7 +117,6 @@ require("lazy").setup({
     },
 
     -- Редактирование
-    { "theprimeagen/harpoon" },
     { "mbbill/undotree" },
     { "stevearc/conform.nvim", opts = {} },
     {
