@@ -13,7 +13,7 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 end
 
 require("lazy").setup({
-    -- Темы
+    -- Colorschemes
     {
         "rose-pine/neovim",
         name = "rose-pine",
@@ -47,7 +47,7 @@ require("lazy").setup({
         },
     },
 
-    -- База
+    -- Must-have
     {
         "nvim-treesitter/nvim-treesitter",
         name = "treesitter",
@@ -62,17 +62,6 @@ require("lazy").setup({
             enable = false,
         },
     },
-    {
-        "ibhagwan/fzf-lua",
-        dependencies = { "fzf-window-picker" },
-        opts = function(_, opts) return require("ytret.fzf-setup").setup(opts) end,
-    },
-    {
-        dir = vim.fn.stdpath("config") .. "/plugins/fzf-window-picker",
-        name = "fzf-window-picker",
-        lazy = false,
-    },
-    { "HiPhish/info.vim" },
 
     -- LSP + autocomplete
     { "williamboman/mason.nvim" },
@@ -83,13 +72,23 @@ require("lazy").setup({
     { "hrsh7th/cmp-nvim-lua" },
     { "L3MON4D3/LuaSnip" },
 
-    -- Проекты
+    -- Projects
     {
         "nvim-tree/nvim-tree.lua",
         name = "nvim-tree",
         version = "*",
         lazy = false,
         config = function() require("nvim-tree").setup({}) end,
+    },
+    {
+        "ibhagwan/fzf-lua",
+        dependencies = { "fzf-window-picker" },
+        opts = function(_, opts) return require("ytret.fzf-setup").setup(opts) end,
+    },
+    {
+        dir = vim.fn.stdpath("config") .. "/plugins/fzf-window-picker",
+        name = "fzf-window-picker",
+        lazy = false,
     },
     {
         "kdheepak/lazygit.nvim",
@@ -116,7 +115,7 @@ require("lazy").setup({
         },
     },
 
-    -- Редактирование
+    -- Code editing
     { "mbbill/undotree" },
     { "stevearc/conform.nvim", opts = {} },
     {
@@ -134,4 +133,7 @@ require("lazy").setup({
             end,
         },
     },
+
+    -- Other
+    { "HiPhish/info.vim" },
 })
