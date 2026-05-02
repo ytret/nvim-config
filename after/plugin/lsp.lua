@@ -176,7 +176,8 @@ vim.lsp.config("clangd", {
         allow_incremental_sync = false,
     },
     cmd = {
-        "/usr/bin/clangd",
+        "/usr/bin/env",
+        "clangd",
         "--query-driver=/usr/bin/arm-none-eabi-gcc,i686-elf-gcc,/nix/**/i686-elf-gcc,/usr/bin/gcc,/usr/bin/clang",
         "--header-insertion=never",
     },
