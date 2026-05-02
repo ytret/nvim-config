@@ -37,9 +37,6 @@ local function def_in_other_win()
             def = result[1]
         end
 
-        local target_win = other_or_new_win()
-        vim.api.nvim_set_current_win(target_win)
-
         local def_uri = def.uri or def.targetUri
         local def_range = def.targetSelectionRange or def.range or def.targetRange
         if def_uri == nil or def_range == nil then
@@ -47,16 +44,28 @@ local function def_in_other_win()
             return
         end
 
+        -- Push current position onto the jumplist before doing anything
+        vim.cmd("normal! m'")
+
+        local target_win = other_or_new_win()
+        vim.api.nvim_set_current_win(target_win)
+
         local def_bufnr = vim.uri_to_bufnr(def_uri)
         local def_row = def_range.start.line + 1
         local def_col = def_range.start.character
-        vim.api.nvim_set_current_buf(def_bufnr)
+
+        -- If the target window already has the right buffer, just move the cursor.
+        -- Otherwise set the buffer first, then push a jumplist entry in that new
+        -- location so Ctrl-O lands on the definition (not some stale position).
+        if vim.api.nvim_win_get_buf(target_win) ~= def_bufnr then
+            vim.api.nvim_win_set_buf(target_win, def_bufnr)
+        end
+
         vim.api.nvim_win_set_cursor(target_win, { def_row, def_col })
         vim.fn.feedkeys("zz")
     end
     vim.lsp.buf_request(0, "textDocument/definition", curr_pos, handler)
 end
-
 local function switch_src_hdr(oth_win)
     oth_win = oth_win or false
 
