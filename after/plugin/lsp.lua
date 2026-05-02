@@ -3,14 +3,20 @@ local window_picker = require("yt-window-picker")
 local function other_or_new_win()
     local wins = vim.tbl_filter(function(win)
         local config = vim.api.nvim_win_get_config(win)
-        return config.relative == "" and config.focusable and not config.hide and not config.external
+        return config.relative == ""
+            and config.focusable
+            and not config.hide
+            and not config.external
     end, vim.api.nvim_tabpage_list_wins(0))
 
     if #wins == 1 then
         vim.cmd("vsplit")
         wins = vim.tbl_filter(function(win)
             local config = vim.api.nvim_win_get_config(win)
-            return config.relative == "" and config.focusable and not config.hide and not config.external
+            return config.relative == ""
+                and config.focusable
+                and not config.hide
+                and not config.external
         end, vim.api.nvim_tabpage_list_wins(0))
     end
 
