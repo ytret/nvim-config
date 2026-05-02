@@ -68,7 +68,7 @@ function M.setup(opts)
     })
     opts.buffers = vim.tbl_deep_extend("force", opts.buffers or {}, {
         actions = {
-            ["default"] = with_picked_window(fzf_actions.buf_edit),
+            ["default"] = with_picked_window(fzf_actions.file_edit),
         },
     })
     opts.grep = vim.tbl_deep_extend("force", opts.grep or {}, {
@@ -81,7 +81,7 @@ function M.setup(opts)
     })
     opts.lsp = vim.tbl_deep_extend("force", opts.buffers or {}, {
         actions = {
-            ["default"] = with_picked_window(fzf_actions.buf_edit),
+            ["default"] = with_picked_window(fzf_actions.file_edit),
         },
     })
 
