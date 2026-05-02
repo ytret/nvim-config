@@ -1,6 +1,12 @@
+-- Window picker used by fzf-lua actions to choose a target split before
+-- opening a file or buffer. It mirrors the nvim-tree-style picker by showing
+-- one label per selectable window in that window's statusline.
 local M = {}
 local prompt = "Pick window: "
 
+---Convert a 1-based index into a stable label sequence: A..Z, AA..ZZ, etc.
+---@param index integer
+---@return string
 local function index_to_label(index)
     local label = ""
 
@@ -13,6 +19,8 @@ local function index_to_label(index)
     return label
 end
 
+---Collect selectable, non-floating windows from the current tabpage.
+---@return integer[]
 local function list_normal_windows()
     local windows = {}
 
@@ -26,12 +34,14 @@ local function list_normal_windows()
     return windows
 end
 
+---Clear the command-line prompt used while reading the selection key.
 local function clear_prompt()
     if vim.opt.cmdheight._value ~= 0 then
         vim.cmd("normal! :")
     end
 end
 
+---Leave terminal-job mode so the picker can read a raw key from Neovim.
 local function leave_terminal_mode()
     local mode = vim.api.nvim_get_mode().mode
     if mode == "t" then
@@ -41,6 +51,12 @@ local function leave_terminal_mode()
     end
 end
 
+---Replace each target window's statusline with its picker label.
+---@param windows integer[]
+---@return table<string, integer> labels
+---@return table<integer, { statusline: string, winhl: string }> window_options
+---@return integer laststatus
+---@return table fillchars
 local function draw_labels(windows)
     local labels = {}
     local window_options = {}
@@ -75,6 +91,10 @@ local function draw_labels(windows)
     return labels, window_options, laststatus, fillchars
 end
 
+---Restore the original window-local statusline and highlight options.
+---@param window_options table<integer, { statusline: string, winhl: string }>
+---@param laststatus integer
+---@param fillchars table
 local function clear_labels(window_options, laststatus, fillchars)
     for win, options in pairs(window_options) do
         if vim.api.nvim_win_is_valid(win) then
@@ -88,6 +108,9 @@ local function clear_labels(window_options, laststatus, fillchars)
     vim.opt.fillchars = fillchars
 end
 
+---Read a single keypress as both its numeric code and character value.
+---@return integer
+---@return string
 local function get_user_input()
     local char = vim.fn.getchar()
     while type(char) ~= "number" do
@@ -96,6 +119,9 @@ local function get_user_input()
     return char, vim.fn.nr2char(char)
 end
 
+---Prompt for a target window and return its window id.
+---Invalid keys are ignored; Esc and Ctrl-C cancel the selection.
+---@return integer|nil
 function M.pick_window()
     leave_terminal_mode()
 
