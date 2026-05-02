@@ -1,7 +1,21 @@
+local window_picker = require("fzf-window-picker")
+
 local function other_or_new_win()
-    local wins = vim.api.nvim_tabpage_list_wins(0)
+    local wins = vim.tbl_filter(function(win)
+        local config = vim.api.nvim_win_get_config(win)
+        return config.relative == "" and config.focusable and not config.hide and not config.external
+    end, vim.api.nvim_tabpage_list_wins(0))
+
     if #wins == 1 then
         vim.cmd("vsplit")
+        wins = vim.tbl_filter(function(win)
+            local config = vim.api.nvim_win_get_config(win)
+            return config.relative == "" and config.focusable and not config.hide and not config.external
+        end, vim.api.nvim_tabpage_list_wins(0))
+    end
+
+    if #wins > 2 then
+        return window_picker.pick_window()
     end
 
     local curr_win = vim.api.nvim_tabpage_get_win(0)
@@ -48,6 +62,10 @@ local function def_in_other_win()
         vim.cmd("normal! m'")
 
         local target_win = other_or_new_win()
+        if target_win == nil then
+            return
+        end
+
         vim.api.nvim_set_current_win(target_win)
 
         local def_bufnr = vim.uri_to_bufnr(def_uri)
