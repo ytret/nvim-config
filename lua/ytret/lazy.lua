@@ -64,19 +64,53 @@ require("lazy").setup({
     },
     {
         "ibhagwan/fzf-lua",
-        opts = {
-            fzf_colors = true,
-            files = {
+        dependencies = { "fzf-window-picker" },
+        opts = function(_, opts)
+            local fzf_actions = require("fzf-lua.actions")
+            local window_picker = require("fzf-window-picker")
+            local function with_picked_window(open_action)
+                return function(selected, action_opts)
+                    local target = window_picker.pick_window()
+                    if not target then
+                        return
+                    end
+
+                    vim.api.nvim_set_current_win(target)
+                    open_action(selected, action_opts)
+                end
+            end
+
+            opts = opts or {}
+            opts.fzf_colors = true
+            opts.files = vim.tbl_deep_extend("force", opts.files or {}, {
                 fzf_opts = {
                     ["--history"] = vim.fn.stdpath("data") .. "/fzf-lua-files-history",
                 },
-            },
-            grep = {
+                actions = {
+                    ["default"] = with_picked_window(fzf_actions.file_edit),
+                },
+            })
+            opts.buffers = vim.tbl_deep_extend("force", opts.buffers or {}, {
+                actions = {
+                    ["default"] = with_picked_window(fzf_actions.buf_edit),
+                },
+            })
+            opts.grep = vim.tbl_deep_extend("force", opts.grep or {}, {
                 fzf_opts = {
                     ["--history"] = vim.fn.stdpath("data") .. "/fzf-lua-grep-history",
                 },
-            },
-        },
+                actions = {
+                    ["default"] = with_picked_window(fzf_actions.file_edit),
+                },
+            })
+
+            return opts
+        end,
+    },
+    {
+        dir = vim.fn.stdpath("config") .. "/plugins/fzf-window-picker",
+        name = "fzf-window-picker",
+        lazy = false,
     },
     { "HiPhish/info.vim" },
 
