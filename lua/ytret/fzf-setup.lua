@@ -3,7 +3,7 @@ local M = {}
 local fzf_actions = require("fzf-lua.actions")
 local fzf_path = require("fzf-lua.path")
 local fzf_utils = require("fzf-lua.utils")
-local window_picker = require("fzf-window-picker")
+local window_picker = require("yt-window-picker")
 local uv = vim.uv or vim.loop
 
 local function has_real_target(selected, action_opts)

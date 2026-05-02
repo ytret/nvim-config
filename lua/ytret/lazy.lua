@@ -82,12 +82,12 @@ require("lazy").setup({
     },
     {
         "ibhagwan/fzf-lua",
-        dependencies = { "fzf-window-picker" },
+        dependencies = { "yt-window-picker" },
         opts = function(_, opts) return require("ytret.fzf-setup").setup(opts) end,
     },
     {
-        dir = vim.fn.stdpath("config") .. "/plugins/fzf-window-picker",
-        name = "fzf-window-picker",
+        dir = vim.fn.stdpath("config") .. "/plugins/yt-window-picker",
+        name = "yt-window-picker",
         lazy = false,
     },
     {

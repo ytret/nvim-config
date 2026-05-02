@@ -1,4 +1,4 @@
-local window_picker = require("fzf-window-picker")
+local window_picker = require("yt-window-picker")
 
 local function other_or_new_win()
     local wins = vim.tbl_filter(function(win)

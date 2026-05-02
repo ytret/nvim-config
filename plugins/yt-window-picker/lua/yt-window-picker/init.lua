@@ -1,6 +1,7 @@
--- Window picker used by fzf-lua actions to choose a target split before
+-- Window picker used by fzf-lua actions and in lsp.lua to choose a target split before
 -- opening a file or buffer. It mirrors the nvim-tree-style picker by showing
 -- one label per selectable window in that window's statusline.
+
 local M = {}
 local prompt = "Pick window: "
 
