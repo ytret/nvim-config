@@ -79,6 +79,11 @@ function M.setup(opts)
             ["default"] = with_picked_window(fzf_actions.file_edit),
         },
     })
+    opts.lsp = vim.tbl_deep_extend("force", opts.buffers or {}, {
+        actions = {
+            ["default"] = with_picked_window(fzf_actions.buf_edit),
+        },
+    })
 
     return opts
 end
