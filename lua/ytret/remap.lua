@@ -25,3 +25,5 @@ vim.keymap.set("c", "<C-F>", "<Right>")
 vim.keymap.set("c", "<C-B>", "<Left>")
 vim.keymap.set("c", "<Esc>f", "<S-Right>")
 vim.keymap.set("c", "<Esc>b", "<S-Left>")
+
+vim.keymap.set("i", "<C-h>", "<Left><C-o>x")
