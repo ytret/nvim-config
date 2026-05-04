@@ -27,3 +27,5 @@ vim.keymap.set("c", "<Esc>f", "<S-Right>")
 vim.keymap.set("c", "<Esc>b", "<S-Left>")
 
 vim.keymap.set("i", "<C-h>", "<Left><C-o>x")
+
+vim.keymap.set("n", "<leader>rw", [[ :let _s=@/<Bar>:%s/\s\+$//e<Bar>:let @/=_s<Bar><CR> ]])
