@@ -13,10 +13,19 @@ end
 
 local function apply_theme_file()
     local theme = read_theme_file()
+    local space_hl_ctermbg
+    local space_hl_guibg
     if theme == "light" then
         vim.o.background = "light"
+
+        space_hl_ctermbg = "red"
+        space_hl_guibg = "lightred"
     else
         vim.o.background = "dark"
+        theme = "dark"
+
+        space_hl_ctermbg = "red"
+        space_hl_guibg = "darkred"
     end
 
     local vim_theme = nil
@@ -39,6 +48,18 @@ local function apply_theme_file()
         elseif vim_theme == "catppuccin-mocha" then
             vim.cmd.highlight("ColorColumn guibg=#262626")
         end
+    end
+
+    ---@diagnostic disable-next-line: undefined-global
+    if YTRET_HIGHLIGHT == true then
+        vim.cmd.highlight(
+            string.format(
+                "MyTrailingWhitespace ctermbg=%s guibg=%s",
+                space_hl_ctermbg,
+                space_hl_guibg
+            )
+        )
+        vim.cmd([[ match MyTrailingWhitespace /\s\+$/ ]])
     end
 end
 
