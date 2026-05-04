@@ -23,6 +23,7 @@ vim.keymap.set("", "<leader>qP", '"+P')
 vim.keymap.set("c", "<C-A>", "<Home>")
 vim.keymap.set("c", "<C-F>", "<Right>")
 vim.keymap.set("c", "<C-B>", "<Left>")
+vim.keymap.set("c", "<C-D>", "<Delete>")
 vim.keymap.set("c", "<Esc>f", "<S-Right>")
 vim.keymap.set("c", "<Esc>b", "<S-Left>")
 
