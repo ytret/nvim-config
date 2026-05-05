@@ -43,17 +43,39 @@ require("nvim-tree").setup({
 
 vim.keymap.set("n", "<leader>pv", vim.cmd.NvimTreeFindFileToggle)
 
-vim.api.nvim_create_autocmd({ "VimResized" }, {
-    desc = "Resize nvim-tree if nvim window got resized",
-
+vim.api.nvim_create_autocmd("VimResized", {
+    desc = "Resize nvim-tree when Neovim window is resized",
     group = vim.api.nvim_create_augroup("NvimTreeResize", { clear = true }),
+
     callback = function()
-        local nvim_tree = require("nvim-tree")
+        local api = require("nvim-tree.api")
+
         local width, height, col, row = calc_size_pos()
-        local config = nvim_tree.config.view.float.open_win_config
-        config.width = width
-        config.height = height
-        config.col = col
-        config.row = row
+
+        -- Update config for future opens
+        local view = require("nvim-tree.view")
+        if view and view.View and view.View.float then
+            view.View.float.width = width
+            view.View.float.height = height
+            view.View.float.col = col
+            view.View.float.row = row
+        end
+
+        -- If tree is open, resize the existing window
+        if api.tree.is_visible() then
+            local winid = api.tree.winid()
+            if winid and vim.api.nvim_win_is_valid(winid) then
+                vim.api.nvim_win_set_config(winid, {
+                    relative = "editor",
+                    width = width,
+                    height = height,
+                    col = col,
+                    row = row,
+                })
+            end
+        end
+
+        -- Force redraw (important)
+        vim.cmd("redraw")
     end,
 })
