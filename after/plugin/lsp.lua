@@ -36,6 +36,12 @@ local function other_or_new_win()
     return target_win
 end
 
+local function bufadd_prefer_rel(abs_path)
+    local rel_path = vim.fs.relpath(vim.fn.getcwd(), abs_path)
+    local target_path = rel_path or abs_path
+    return vim.fn.bufadd(target_path)
+end
+
 local function def_in_other_win()
     local curr_pos = vim.lsp.util.make_position_params(0, "utf-8")
     local handler = function(err, result, _)
@@ -74,7 +80,8 @@ local function def_in_other_win()
 
         vim.api.nvim_set_current_win(target_win)
 
-        local def_bufnr = vim.uri_to_bufnr(def_uri)
+        local def_path = vim.uri_to_fname(def_uri)
+        local def_bufnr = bufadd_prefer_rel(def_path)
         local def_row = def_range.start.line + 1
         local def_col = def_range.start.character
 
@@ -110,13 +117,7 @@ local function switch_src_hdr(oth_win)
         end
 
         local abs_path = vim.uri_to_fname(result)
-        local rel_path = vim.fs.relpath(vim.fn.getcwd(), abs_path)
-        local target_bufnr
-        if rel_path == nil then
-            target_bufnr = vim.fn.bufadd(abs_path)
-        else
-            target_bufnr = vim.fn.bufadd(rel_path)
-        end
+        local target_bufnr = bufadd_prefer_rel(abs_path)
         vim.api.nvim_set_current_buf(target_bufnr)
     end
 
