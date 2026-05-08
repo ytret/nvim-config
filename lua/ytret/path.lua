@@ -16,29 +16,54 @@ local function find_buffer_by_path(path)
     end
 end
 
-function M.rename_buffer_prefer_rel(abs_path)
-    local rel_path = vim.fs.relpath(vim.fn.getcwd(), abs_path)
-    local existing_bufnr = find_buffer_by_path(abs_path)
-
-    if existing_bufnr ~= nil then
-        if rel_path ~= nil and vim.api.nvim_buf_get_name(existing_bufnr) ~= rel_path then
-            pcall(vim.api.nvim_buf_set_name, existing_bufnr, rel_path)
+local function is_buffer_visible(bufnr)
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if vim.api.nvim_win_get_buf(win) == bufnr then
+            return true
         end
     end
-
-    return existing_bufnr
+    return false
 end
 
 function M.bufadd_prefer_rel(abs_path)
     local rel_path = vim.fs.relpath(vim.fn.getcwd(), abs_path)
     local target_path = rel_path or abs_path
-    local existing_bufnr = M.rename_buffer_prefer_rel(abs_path)
+    local existing_bufnr = find_buffer_by_path(abs_path)
 
     if existing_bufnr ~= nil then
-        return existing_bufnr
+        if vim.api.nvim_buf_get_name(existing_bufnr) == target_path then
+            return existing_bufnr
+        end
+
+        if rel_path ~= nil
+            and vim.fn.buflisted(existing_bufnr) == 0
+            and not vim.bo[existing_bufnr].modified
+            and not is_buffer_visible(existing_bufnr)
+        then
+            vim.api.nvim_buf_delete(existing_bufnr, { force = true })
+        else
+            return existing_bufnr
+        end
     end
 
-    return vim.fn.bufadd(target_path)
+    local bufnr = vim.fn.bufadd(target_path)
+    if bufnr ~= -1 then
+        return bufnr
+    end
+
+    if rel_path ~= nil then
+        bufnr = vim.fn.bufadd(abs_path)
+        if bufnr ~= -1 then
+            return bufnr
+        end
+    end
+
+    return 0
+end
+
+function M.path_prefer_rel(abs_path)
+    local rel_path = vim.fs.relpath(vim.fn.getcwd(), abs_path)
+    return rel_path or abs_path
 end
 
 return M

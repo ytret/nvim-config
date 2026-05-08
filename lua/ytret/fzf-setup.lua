@@ -56,25 +56,56 @@ local function with_picked_window(open_action)
     end
 end
 
-local function lsp_file_edit_prefer_rel(selected, action_opts)
-    local abs_paths = {}
-    if selected then
-        for _, item in ipairs(selected) do
-            local ok, entry = pcall(fzf_path.entry_to_file, item, action_opts, action_opts._uri)
-            if ok and entry then
-                if entry.uri and entry.uri:match("^file://") then
-                    table.insert(abs_paths, vim.uri_to_fname(entry.uri))
-                elseif entry.path and fzf_path.is_absolute(entry.path) then
-                    table.insert(abs_paths, entry.path)
-                end
-            end
-        end
+local function set_buf_listed(bufnr)
+    vim.cmd.stopinsert()
+    local ok = pcall(vim.api.nvim_set_current_buf, bufnr)
+    if not ok then
+        return false
     end
 
-    fzf_actions.file_edit(selected, action_opts)
+    vim.bo[bufnr].buflisted = true
+    return true
+end
 
-    for _, abs_path in ipairs(abs_paths) do
-        yt_path.rename_buffer_prefer_rel(abs_path)
+local function lsp_file_edit_prefer_rel(selected, action_opts)
+    if not selected or #selected ~= 1 then
+        return fzf_actions.file_edit(selected, action_opts)
+    end
+
+    local ok, entry = pcall(fzf_path.entry_to_file, selected[1], action_opts, action_opts._uri)
+    if not ok or not entry then
+        return fzf_actions.file_edit(selected, action_opts)
+    end
+
+    local abs_path
+    if entry.uri and entry.uri:match("^file://") then
+        abs_path = vim.uri_to_fname(entry.uri)
+    elseif entry.path and fzf_path.is_absolute(entry.path) then
+        abs_path = entry.path
+    end
+
+    if not abs_path or abs_path == "" then
+        return fzf_actions.file_edit(selected, action_opts)
+    end
+
+    if not fzf_utils.is_term_buffer(0) then
+        vim.cmd("normal! m`")
+    end
+
+    local target_bufnr = yt_path.bufadd_prefer_rel(abs_path)
+    if target_bufnr == 0 or not set_buf_listed(target_bufnr) then
+        return fzf_actions.file_edit(selected, action_opts)
+    end
+
+    if entry.line > 0 or entry.col > 0 then
+        pcall(vim.api.nvim_win_set_cursor, 0, {
+            math.max(1, entry.line),
+            math.max(0, entry.col - 1),
+        })
+    end
+
+    if not action_opts.no_action_zz and not fzf_utils.is_term_buffer(0) then
+        vim.cmd("norm! zvzz")
     end
 end
 
