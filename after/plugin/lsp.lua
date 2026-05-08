@@ -1,4 +1,5 @@
 local window_picker = require("yt-window-picker")
+local yt_path = require("ytret.path")
 
 local function other_or_new_win()
     local wins = vim.tbl_filter(function(win)
@@ -34,12 +35,6 @@ local function other_or_new_win()
 
     assert(target_win ~= nil)
     return target_win
-end
-
-local function bufadd_prefer_rel(abs_path)
-    local rel_path = vim.fs.relpath(vim.fn.getcwd(), abs_path)
-    local target_path = rel_path or abs_path
-    return vim.fn.bufadd(target_path)
 end
 
 local function def_in_other_win()
@@ -81,7 +76,7 @@ local function def_in_other_win()
         vim.api.nvim_set_current_win(target_win)
 
         local def_path = vim.uri_to_fname(def_uri)
-        local def_bufnr = bufadd_prefer_rel(def_path)
+        local def_bufnr = yt_path.bufadd_prefer_rel(def_path)
         local def_row = def_range.start.line + 1
         local def_col = def_range.start.character
 
@@ -117,7 +112,7 @@ local function switch_src_hdr(oth_win)
         end
 
         local abs_path = vim.uri_to_fname(result)
-        local target_bufnr = bufadd_prefer_rel(abs_path)
+        local target_bufnr = yt_path.bufadd_prefer_rel(abs_path)
         vim.api.nvim_set_current_buf(target_bufnr)
     end
 

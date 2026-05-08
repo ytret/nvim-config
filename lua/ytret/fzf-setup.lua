@@ -4,6 +4,7 @@ local fzf_actions = require("fzf-lua.actions")
 local fzf_path = require("fzf-lua.path")
 local fzf_utils = require("fzf-lua.utils")
 local window_picker = require("yt-window-picker")
+local yt_path = require("ytret.path")
 local uv = vim.uv or vim.loop
 
 local function has_real_target(selected, action_opts)
@@ -55,6 +56,28 @@ local function with_picked_window(open_action)
     end
 end
 
+local function lsp_file_edit_prefer_rel(selected, action_opts)
+    local abs_paths = {}
+    if selected then
+        for _, item in ipairs(selected) do
+            local ok, entry = pcall(fzf_path.entry_to_file, item, action_opts, action_opts._uri)
+            if ok and entry then
+                if entry.uri and entry.uri:match("^file://") then
+                    table.insert(abs_paths, vim.uri_to_fname(entry.uri))
+                elseif entry.path and fzf_path.is_absolute(entry.path) then
+                    table.insert(abs_paths, entry.path)
+                end
+            end
+        end
+    end
+
+    fzf_actions.file_edit(selected, action_opts)
+
+    for _, abs_path in ipairs(abs_paths) do
+        yt_path.rename_buffer_prefer_rel(abs_path)
+    end
+end
+
 function M.setup(opts)
     opts = opts or {}
     opts.fzf_colors = true
@@ -80,8 +103,9 @@ function M.setup(opts)
         },
     })
     opts.lsp = vim.tbl_deep_extend("force", opts.buffers or {}, {
+        jump1_action = lsp_file_edit_prefer_rel,
         actions = {
-            ["default"] = with_picked_window(fzf_actions.file_edit),
+            ["enter"] = lsp_file_edit_prefer_rel,
         },
     })
 
