@@ -37,6 +37,17 @@ local function other_or_new_win()
     return target_win
 end
 
+local function set_buf_listed(bufnr)
+    vim.cmd.stopinsert()
+    local ok = pcall(vim.api.nvim_set_current_buf, bufnr)
+    if not ok then
+        return false
+    end
+
+    vim.bo[bufnr].buflisted = true
+    return true
+end
+
 local function def_in_other_win()
     local curr_pos = vim.lsp.util.make_position_params(0, "utf-8")
     local handler = function(err, result, _)
@@ -84,7 +95,9 @@ local function def_in_other_win()
         -- Otherwise set the buffer first, then push a jumplist entry in that new
         -- location so Ctrl-O lands on the definition (not some stale position).
         if vim.api.nvim_win_get_buf(target_win) ~= def_bufnr then
-            vim.api.nvim_win_set_buf(target_win, def_bufnr)
+            if not set_buf_listed(def_bufnr) then
+                return
+            end
         end
 
         vim.api.nvim_win_set_cursor(target_win, { def_row, def_col })
@@ -113,7 +126,7 @@ local function switch_src_hdr(oth_win)
 
         local abs_path = vim.uri_to_fname(result)
         local target_bufnr = yt_path.bufadd_prefer_rel(abs_path)
-        vim.api.nvim_set_current_buf(target_bufnr)
+        set_buf_listed(target_bufnr)
     end
 
     vim.lsp.buf_request(0, "textDocument/switchSourceHeader", doc_id, handler)
