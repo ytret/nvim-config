@@ -11,6 +11,13 @@ vim.keymap.set("n", "N", "Nzzzv")
 vim.keymap.set("n", "Q", "<nop>")
 vim.keymap.set("n", "<leader>bd", ":b# | bd #<cr>")
 
+vim.keymap.set("n", "<leader>wq", vim.cmd.quit)
+vim.keymap.set("n", "<leader>wv", vim.cmd.vsplit)
+vim.keymap.set("n", "<leader>wn", vim.cmd.vsplit)
+vim.keymap.set("n", "<leader>ws", vim.cmd.split)
+vim.keymap.set("n", "<leader>wo", vim.cmd.only)
+vim.keymap.set("n", "<leader>wh", ":vert help ")
+
 vim.keymap.set("", "<leader>y", '"+y')
 vim.keymap.set("", "<leader>Y", '"+Y')
 vim.keymap.set("", "<leader>qy", '"+y')
