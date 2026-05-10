@@ -174,6 +174,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
         vim.keymap.set("n", "go", def_in_other_win, opts)
         vim.keymap.set("n", "gtn", def_in_new_tab, opts)
+        vim.keymap.set("n", "gto", def_in_new_tab, opts)
         vim.keymap.set("n", "gt1", function() def_in_tab(1) end, opts)
         vim.keymap.set("n", "gt2", function() def_in_tab(2) end, opts)
         vim.keymap.set("n", "gt3", function() def_in_tab(3) end, opts)
