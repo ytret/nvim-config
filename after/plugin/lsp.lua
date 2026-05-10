@@ -48,7 +48,18 @@ local function set_buf_listed(bufnr)
     return true
 end
 
-local function def_in_other_win()
+local function goto_tab(tabnr)
+    local last_tabnr = vim.fn.tabpagenr("$")
+    if tabnr < 1 or tabnr > last_tabnr then
+        print(string.format("Tab %d does not exist", tabnr))
+        return false
+    end
+
+    vim.cmd.tabnext(string.format("%d", tabnr))
+    return true
+end
+
+local function def_in_target(open_target)
     local curr_pos = vim.lsp.util.make_position_params(0, "utf-8")
     local handler = function(err, result, _)
         if err then
@@ -79,7 +90,7 @@ local function def_in_other_win()
         -- Push current position onto the jumplist before doing anything
         vim.cmd("normal! m'")
 
-        local target_win = other_or_new_win()
+        local target_win = open_target()
         if target_win == nil then
             return
         end
@@ -105,6 +116,29 @@ local function def_in_other_win()
     end
     vim.lsp.buf_request(0, "textDocument/definition", curr_pos, handler)
 end
+
+local function def_in_other_win()
+    return def_in_target(other_or_new_win)
+end
+
+local function def_in_tab(tabnr)
+    return def_in_target(function()
+        if not goto_tab(tabnr) then
+            return nil
+        end
+
+        return vim.api.nvim_get_current_win()
+    end)
+end
+
+local function def_in_new_tab()
+    return def_in_target(function()
+        vim.cmd.tabnew()
+        return vim.api.nvim_get_current_win()
+    end)
+end
+
+
 local function switch_src_hdr(oth_win)
     oth_win = oth_win or false
 
@@ -139,6 +173,16 @@ vim.api.nvim_create_autocmd("LspAttach", {
         local opts = { buffer = args.buf, remap = false }
 
         vim.keymap.set("n", "go", def_in_other_win, opts)
+        vim.keymap.set("n", "gtn", def_in_new_tab, opts)
+        vim.keymap.set("n", "gt1", function() def_in_tab(1) end, opts)
+        vim.keymap.set("n", "gt2", function() def_in_tab(2) end, opts)
+        vim.keymap.set("n", "gt3", function() def_in_tab(3) end, opts)
+        vim.keymap.set("n", "gt4", function() def_in_tab(4) end, opts)
+        vim.keymap.set("n", "gt5", function() def_in_tab(5) end, opts)
+        vim.keymap.set("n", "gt6", function() def_in_tab(6) end, opts)
+        vim.keymap.set("n", "gt7", function() def_in_tab(7) end, opts)
+        vim.keymap.set("n", "gt8", function() def_in_tab(8) end, opts)
+        vim.keymap.set("n", "gt9", function() def_in_tab(9) end, opts)
         vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
         vim.keymap.set("n", "<leader>vd", vim.diagnostic.open_float, opts)
         vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, opts)
