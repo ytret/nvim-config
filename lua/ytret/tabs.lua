@@ -28,7 +28,11 @@ vim.keymap.set("n", "<leader>tl", "g<tab>")
 
 -- Go to tab N
 local function gen_tabn(num)
-    return function() vim.cmd.tabn(string.format("%d", num)) end
+    return function()
+        if num <= #vim.api.nvim_list_tabpages() then
+            vim.cmd.tabn(string.format("%d", num))
+        end
+    end
 end
 vim.keymap.set("n", "<M-1>", gen_tabn(1))
 vim.keymap.set("n", "<M-2>", gen_tabn(2))
