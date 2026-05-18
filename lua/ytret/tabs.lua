@@ -29,8 +29,11 @@ vim.keymap.set("n", "<leader>tl", "g<tab>")
 -- Go to tab N
 local function gen_tabn(num)
     return function()
-        if num <= #vim.api.nvim_list_tabpages() then
+        local last_tabnr = vim.fn.tabpagenr("$")
+        if num <= last_tabnr then
             vim.cmd.tabn(string.format("%d", num))
+        else
+            print(string.format("Tab %d does not exist", num))
         end
     end
 end
