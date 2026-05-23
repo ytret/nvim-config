@@ -221,12 +221,10 @@ local function tab_label(tabnr)
 end
 
 local function tab_str(tabnr, label, active)
+    local hl = active and "%#TabLineSel#" or "%#TabLine#"
     return string.format(
-        "%%%dT%%#TabLine# %d %s%s%%#TabLine# ",
-        tabnr,
-        tabnr,
-        active and "%#TabLineSel#" or "%#TabLine#",
-        label
+        "%%%dT%s %d %s%s %%#TabLine#",
+        tabnr, hl, tabnr, hl, label
     )
 end
 
