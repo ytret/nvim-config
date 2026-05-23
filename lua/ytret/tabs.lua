@@ -139,17 +139,19 @@ end
 
 function M.tabline()
     local parts = {}
+    local cur = vim.fn.tabpagenr()
 
     for tabnr = 1, vim.fn.tabpagenr("$") do
         if tabnr > 1 then
             table.insert(parts, "%#TabLineFill#|")
         end
 
-        local is_current = tabnr == vim.fn.tabpagenr()
-        local num_hl = "%#TabLine#"
-        local name_hl = is_current and "%#TabLineSel#" or "%#TabLine#"
-
-        table.insert(parts, string.format("%%%dT%s%d %s%s ", tabnr, num_hl, tabnr, name_hl, tab_label(tabnr)))
+        table.insert(parts, string.format(
+            "%%%dT%%#TabLine# %d %s%s%%#TabLine# ",
+            tabnr, tabnr,
+            tabnr == cur and "%#TabLineSel#" or "%#TabLine#",
+            tab_label(tabnr)
+        ))
     end
 
     table.insert(parts, "%#TabLineFill#%T")
