@@ -138,8 +138,8 @@ do
     end
 end
 
-local function tab_label(tabnr)
-    local cur_winid = vim.api.nvim_tabpage_get_win(tabnr)
+local function tab_label(tabpage, tabnr)
+    local cur_winid = vim.api.nvim_tabpage_get_win(tabpage)
     local cfg = vim.api.nvim_win_get_config(cur_winid)
     local bufnr
 
@@ -164,7 +164,7 @@ local function tab_label(tabnr)
     end
 
     if not bufnr then
-        for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(tabnr)) do
+        for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
             local wcfg = vim.api.nvim_win_get_config(winid)
             if wcfg.relative == "" then
                 local b = vim.api.nvim_win_get_buf(winid)
@@ -336,9 +336,10 @@ function M.tabline()
     local cur = vim.fn.tabpagenr()
     local cols = vim.o.columns
 
+    local tabpages = vim.api.nvim_list_tabpages()
     local tabs = {}
     for tabnr = 1, total do
-        local label = tab_label(tabnr)
+        local label = tab_label(tabpages[tabnr], tabnr)
         tabs[tabnr] = {
             label = label,
             w = 1 + #tostring(tabnr) + 1 + #label + 1,
