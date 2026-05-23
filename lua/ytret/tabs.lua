@@ -80,6 +80,19 @@ end
 
 vim.keymap.set("n", "<leader>tm", prompt_move_tab)
 
+-- Move current tab left/right
+vim.keymap.set("n", "<M-{>", function()
+    if vim.fn.tabpagenr() > 1 then
+        vim.cmd("tabmove -1")
+    end
+end)
+
+vim.keymap.set("n", "<M-}>", function()
+    if vim.fn.tabpagenr() < vim.fn.tabpagenr("$") then
+        vim.cmd("tabmove +1")
+    end
+end)
+
 -- Go to the prev/next/last tab
 vim.keymap.set("n", "<leader>tp", vim.cmd.tabprev)
 vim.keymap.set("n", "<leader>tn", vim.cmd.tabnext)
