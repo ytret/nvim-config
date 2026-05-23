@@ -94,6 +94,20 @@ describe("tabs", function()
                 "Expected '[No Name]' in tabline, got: " .. tostring(result))
         end)
 
+        it("does not error after closing and recreating tabs", function()
+            vim.cmd("tabnew")
+            vim.cmd("tabprev")
+            vim.cmd("tabclose")
+            vim.cmd("tabnew")
+
+            local ok, result = pcall(tabs.tabline)
+            assert.is_true(ok, "tabline() should not error after close/reopen tabs")
+            assert.truthy(result:find("%1T", 1, true),
+                "tab 1 should appear in tabline, got: " .. tostring(result))
+            assert.truthy(result:find("%2T", 1, true),
+                "tab 2 should appear in tabline, got: " .. tostring(result))
+        end)
+
         it("handles multiple tabpages", function()
             local buf1 = vim.api.nvim_create_buf(true, false)
             vim.api.nvim_buf_set_name(buf1, "/tmp/foo")
