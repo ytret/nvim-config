@@ -2,9 +2,7 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 
-local function canonical_path(path)
-    return uv.fs_realpath(path) or vim.fs.normalize(path)
-end
+local function canonical_path(path) return uv.fs_realpath(path) or vim.fs.normalize(path) end
 
 local function find_buffer_by_path(path)
     local target = canonical_path(path)
@@ -62,6 +60,17 @@ function M.bufadd_prefer_rel(abs_path)
     end
 
     return 0
+end
+
+function M.set_buf_listed(bufnr)
+    vim.cmd.stopinsert()
+    local ok = pcall(vim.api.nvim_set_current_buf, bufnr)
+    if not ok then
+        return false
+    end
+
+    vim.bo[bufnr].buflisted = true
+    return true
 end
 
 function M.path_prefer_rel(abs_path)

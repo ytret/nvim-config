@@ -83,3 +83,30 @@ describe("bufadd_prefer_rel", function()
         end)
     end)
 end)
+
+describe("set_buf_listed", function()
+    local path = require("ytret.path")
+
+    it("stops insert mode and marks buffer as listed", function()
+        local bufnr = vim.api.nvim_create_buf(true, false)
+        vim.bo[bufnr].buflisted = false
+        vim.cmd.startinsert()
+
+        local result = path.set_buf_listed(bufnr)
+
+        assert.is_true(result)
+        assert.is_true(vim.bo[bufnr].buflisted)
+        assert.equals(bufnr, vim.api.nvim_get_current_buf())
+        assert.equals("n", vim.fn.mode())
+    end)
+
+    it("returns false for nil bufnr", function()
+        local result = path.set_buf_listed(nil)
+        assert.is_false(result)
+    end)
+
+    it("returns false for invalid bufnr", function()
+        local result = path.set_buf_listed(99999)
+        assert.is_false(result)
+    end)
+end)

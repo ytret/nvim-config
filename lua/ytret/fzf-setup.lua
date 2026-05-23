@@ -115,17 +115,6 @@ local function with_picked_tab(open_action)
     end
 end
 
-local function set_buf_listed(bufnr)
-    vim.cmd.stopinsert()
-    local ok = pcall(vim.api.nvim_set_current_buf, bufnr)
-    if not ok then
-        return false
-    end
-
-    vim.bo[bufnr].buflisted = true
-    return true
-end
-
 local function lsp_file_edit_prefer_rel(selected, action_opts)
     if not selected or #selected ~= 1 then
         return fzf_actions.file_edit(selected, action_opts)
@@ -152,7 +141,7 @@ local function lsp_file_edit_prefer_rel(selected, action_opts)
     end
 
     local target_bufnr = yt_path.bufadd_prefer_rel(abs_path)
-    if target_bufnr == 0 or not set_buf_listed(target_bufnr) then
+    if target_bufnr == 0 or not yt_path.set_buf_listed(target_bufnr) then
         return fzf_actions.file_edit(selected, action_opts)
     end
 

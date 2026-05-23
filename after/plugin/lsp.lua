@@ -37,17 +37,6 @@ local function other_or_new_win()
     return target_win
 end
 
-local function set_buf_listed(bufnr)
-    vim.cmd.stopinsert()
-    local ok = pcall(vim.api.nvim_set_current_buf, bufnr)
-    if not ok then
-        return false
-    end
-
-    vim.bo[bufnr].buflisted = true
-    return true
-end
-
 local function goto_tab(tabnr)
     local last_tabnr = vim.fn.tabpagenr("$")
     if tabnr < 1 or tabnr > last_tabnr then
@@ -106,7 +95,7 @@ local function def_in_target(open_target)
         -- Otherwise set the buffer first, then push a jumplist entry in that new
         -- location so Ctrl-O lands on the definition (not some stale position).
         if vim.api.nvim_win_get_buf(target_win) ~= def_bufnr then
-            if not set_buf_listed(def_bufnr) then
+            if not yt_path.set_buf_listed(def_bufnr) then
                 return
             end
         end
@@ -117,9 +106,7 @@ local function def_in_target(open_target)
     vim.lsp.buf_request(0, "textDocument/definition", curr_pos, handler)
 end
 
-local function def_in_other_win()
-    return def_in_target(other_or_new_win)
-end
+local function def_in_other_win() return def_in_target(other_or_new_win) end
 
 local function def_in_tab(tabnr)
     return def_in_target(function()
@@ -137,7 +124,6 @@ local function def_in_new_tab()
         return vim.api.nvim_get_current_win()
     end)
 end
-
 
 local function switch_src_hdr(oth_win)
     oth_win = oth_win or false
@@ -160,7 +146,7 @@ local function switch_src_hdr(oth_win)
 
         local abs_path = vim.uri_to_fname(result)
         local target_bufnr = yt_path.bufadd_prefer_rel(abs_path)
-        set_buf_listed(target_bufnr)
+        yt_path.set_buf_listed(target_bufnr)
     end
 
     vim.lsp.buf_request(0, "textDocument/switchSourceHeader", doc_id, handler)
