@@ -76,11 +76,9 @@ local function tab_label(tabnr)
     local winnr = vim.fn.tabpagewinnr(tabnr)
     local bufnr = buflist[winnr]
 
-    if bufnr and vim.api.nvim_buf_is_valid(bufnr)
-        and vim.bo[bufnr].buftype == "terminal" then
+    if bufnr and vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].buftype == "terminal" then
         for _, b in ipairs(buflist) do
-            if vim.api.nvim_buf_is_valid(b)
-                and vim.bo[b].buftype ~= "terminal" then
+            if vim.api.nvim_buf_is_valid(b) and vim.bo[b].buftype ~= "terminal" then
                 bufnr = b
                 break
             end
@@ -159,7 +157,8 @@ end
 local function tab_str(tabnr, label, active)
     return string.format(
         "%%%dT%%#TabLine# %d %s%s%%#TabLine# ",
-        tabnr, tabnr,
+        tabnr,
+        tabnr,
         active and "%#TabLineSel#" or "%#TabLine#",
         label
     )
@@ -215,14 +214,20 @@ function M.tabline()
             w = w + 1 + tabs[s].w
             changed = true
         end
-        if not changed then break end
+        if not changed then
+            break
+        end
     end
 
     -- Phase 2: reserve space for scroll indicators
     local left_arrow = s > 1
     local right_arrow = e < total
-    if left_arrow then avail = avail - 3 end
-    if right_arrow then avail = avail - 3 end
+    if left_arrow then
+        avail = avail - 3
+    end
+    if right_arrow then
+        avail = avail - 3
+    end
 
     -- Phase 3: retract tabs from the furthest side to fit arrows
     while w > avail and s < e do
