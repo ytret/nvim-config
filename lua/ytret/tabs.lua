@@ -256,18 +256,9 @@ local function tab_str(tabnr, label, active)
     return string.format("%%%dT%s %d %s%s %%#TabLine#", tabnr, hl, tabnr, hl, label)
 end
 
-function M.tabline()
-    local total = vim.fn.tabpagenr("$")
-    local cur = vim.fn.tabpagenr()
-    local cols = vim.o.columns
-
-    local tabs = {}
-    for tabnr = 1, total do
-        local label = tab_label(tabnr)
-        tabs[tabnr] = {
-            label = label,
-            w = 1 + #tostring(tabnr) + 1 + #label + 1,
-        }
+function M._scrolled_range(tabs, total, cur, cols)
+    if #tabs == 0 or total == 0 then
+        return { start = 1, end_ = 1, left_arrow = false, right_arrow = false }
     end
 
     -- Total width if all tabs are rendered
@@ -277,18 +268,9 @@ function M.tabline()
     end
 
     if total_w <= cols then
-        local parts = {}
-        for tabnr = 1, total do
-            if tabnr > 1 then
-                table.insert(parts, "%#TabLineFill#|")
-            end
-            table.insert(parts, tab_str(tabnr, tabs[tabnr].label, tabnr == cur))
-        end
-        table.insert(parts, "%#TabLineFill#%T")
-        return table.concat(parts)
+        return { start = 1, end_ = total, left_arrow = false, right_arrow = false }
     end
 
-    -- Scrolling: find a contiguous range that fits and includes the active tab
     local avail = cols
     local s, e = cur, cur
     local w = tabs[cur].w
@@ -343,22 +325,57 @@ function M.tabline()
             s = s + 1
         end
     end
-    -- Update arrow flags after possible retraction
     left_arrow = s > 1
     right_arrow = e < total
 
-    -- Render
+    return { start = s, end_ = e, left_arrow = left_arrow, right_arrow = right_arrow }
+end
+
+function M.tabline()
+    local total = vim.fn.tabpagenr("$")
+    local cur = vim.fn.tabpagenr()
+    local cols = vim.o.columns
+
+    local tabs = {}
+    for tabnr = 1, total do
+        local label = tab_label(tabnr)
+        tabs[tabnr] = {
+            label = label,
+            w = 1 + #tostring(tabnr) + 1 + #label + 1,
+        }
+    end
+
+    -- Total width if all tabs are rendered
+    local total_w = tabs[1].w
+    for tabnr = 2, total do
+        total_w = total_w + 1 + tabs[tabnr].w
+    end
+
+    if total_w <= cols then
+        local parts = {}
+        for tabnr = 1, total do
+            if tabnr > 1 then
+                table.insert(parts, "%#TabLineFill#|")
+            end
+            table.insert(parts, tab_str(tabnr, tabs[tabnr].label, tabnr == cur))
+        end
+        table.insert(parts, "%#TabLineFill#%T")
+        return table.concat(parts)
+    end
+
+    local range = M._scrolled_range(tabs, total, cur, cols)
+
     local parts = {}
-    if left_arrow then
+    if range.left_arrow then
         table.insert(parts, "%#TabLineFill# < ")
     end
-    for tabnr = s, e do
-        if tabnr > s then
+    for tabnr = range.start, range.end_ do
+        if tabnr > range.start then
             table.insert(parts, "%#TabLineFill#|")
         end
         table.insert(parts, tab_str(tabnr, tabs[tabnr].label, tabnr == cur))
     end
-    if right_arrow then
+    if range.right_arrow then
         table.insert(parts, "%#TabLineFill# > ")
     end
     table.insert(parts, "%#TabLineFill#%T")
