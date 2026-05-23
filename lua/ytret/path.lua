@@ -25,6 +25,13 @@ local function is_buffer_visible(bufnr)
     return false
 end
 
+local function can_buffer_be_reused(bufnr, rel_path)
+    return rel_path == nil
+        or vim.fn.buflisted(bufnr) == 1
+        or vim.bo[bufnr].modified
+        or is_buffer_visible(bufnr)
+end
+
 function M.bufadd_prefer_rel(abs_path)
     local rel_path = vim.fs.relpath(vim.fn.getcwd(), abs_path)
     local target_path = rel_path or abs_path
@@ -35,15 +42,11 @@ function M.bufadd_prefer_rel(abs_path)
             return existing_bufnr
         end
 
-        if rel_path ~= nil
-            and vim.fn.buflisted(existing_bufnr) == 0
-            and not vim.bo[existing_bufnr].modified
-            and not is_buffer_visible(existing_bufnr)
-        then
-            vim.api.nvim_buf_delete(existing_bufnr, { force = true })
-        else
+        if can_buffer_be_reused(existing_bufnr, rel_path) then
             return existing_bufnr
         end
+
+        vim.api.nvim_buf_delete(existing_bufnr, { force = true })
     end
 
     local bufnr = vim.fn.bufadd(target_path)

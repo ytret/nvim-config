@@ -20,6 +20,8 @@ local function index_to_label(index)
     return label
 end
 
+M.index_to_label = index_to_label
+
 ---Collect selectable, non-floating windows from the current tabpage.
 ---@return integer[]
 local function list_normal_windows()
