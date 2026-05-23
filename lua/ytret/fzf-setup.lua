@@ -56,6 +56,65 @@ local function with_picked_window(open_action)
     end
 end
 
+local function with_picked_tab(open_action)
+    return function(selected, action_opts)
+        if not has_real_target(selected, action_opts) then
+            return
+        end
+
+        vim.cmd("redraw")
+
+        local last_tabnr = vim.fn.tabpagenr("$")
+        local tabnr
+
+        if last_tabnr <= 9 then
+            if vim.opt.cmdheight._value ~= 0 then
+                print(string.format("Tab (1-%d, N): ", last_tabnr))
+            end
+
+            while true do
+                local ok, code = pcall(vim.fn.getchar)
+                if not ok then
+                    return
+                end
+                if code == 27 or code == 3 then
+                    return
+                end
+                local char = vim.fn.nr2char(code)
+                local upper = char:upper()
+                if upper == "N" then
+                    vim.cmd.tabnew()
+                    open_action(selected, action_opts)
+                    return
+                end
+                local n = tonumber(char)
+                if n and n >= 1 and n <= last_tabnr then
+                    tabnr = n
+                    break
+                end
+            end
+        else
+            local ok, input = pcall(vim.fn.input, "Tab number (or N for new): ")
+            if not ok or input == "" then
+                return
+            end
+            local upper = input:upper()
+            if upper == "N" then
+                vim.cmd.tabnew()
+                open_action(selected, action_opts)
+                return
+            end
+            tabnr = tonumber(input)
+            if not tabnr or tabnr < 1 or tabnr > last_tabnr then
+                return
+            end
+        end
+
+        vim.cmd.tabnext(tostring(tabnr))
+        open_action(selected, action_opts)
+    end
+end
+
 local function set_buf_listed(bufnr)
     vim.cmd.stopinsert()
     local ok = pcall(vim.api.nvim_set_current_buf, bufnr)
@@ -118,11 +177,13 @@ function M.setup(opts)
         },
         actions = {
             ["default"] = with_picked_window(fzf_actions.file_edit),
+            ["ctrl-t"] = with_picked_tab(fzf_actions.file_edit),
         },
     })
     opts.buffers = vim.tbl_deep_extend("force", opts.buffers or {}, {
         actions = {
             ["default"] = with_picked_window(fzf_actions.file_edit),
+            ["ctrl-t"] = with_picked_tab(fzf_actions.file_edit),
         },
     })
     opts.grep = vim.tbl_deep_extend("force", opts.grep or {}, {
@@ -131,12 +192,14 @@ function M.setup(opts)
         },
         actions = {
             ["default"] = with_picked_window(fzf_actions.file_edit),
+            ["ctrl-t"] = with_picked_tab(fzf_actions.file_edit),
         },
     })
     opts.lsp = vim.tbl_deep_extend("force", opts.buffers or {}, {
         jump1_action = lsp_file_edit_prefer_rel,
         actions = {
             ["enter"] = lsp_file_edit_prefer_rel,
+            ["ctrl-t"] = with_picked_tab(lsp_file_edit_prefer_rel),
         },
     })
 
