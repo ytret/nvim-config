@@ -47,6 +47,15 @@ vim.keymap.set("n", "<M-7>", gen_tabn(7))
 vim.keymap.set("n", "<M-8>", gen_tabn(8))
 vim.keymap.set("n", "<M-9>", gen_tabn(9))
 
+local function rtl_components(dir)
+    local parts = {}
+    while dir ~= "" and dir ~= "." and dir ~= "/" do
+        parts[#parts + 1] = vim.fn.fnamemodify(dir, ":t")
+        dir = vim.fn.fnamemodify(dir, ":h")
+    end
+    return parts
+end
+
 local function tab_label(tabnr)
     local buflist = vim.fn.tabpagebuflist(tabnr)
     local winnr = vim.fn.tabpagewinnr(tabnr)
@@ -57,7 +66,67 @@ local function tab_label(tabnr)
         return "[No Name]"
     end
 
-    return vim.fn.fnamemodify(bufname, ":t")
+    local tail = vim.fn.fnamemodify(bufname, ":t")
+
+    local all = {}
+    for t = 1, vim.fn.tabpagenr("$") do
+        local bl = vim.fn.tabpagebuflist(t)
+        local name = vim.api.nvim_buf_get_name(bl[vim.fn.tabpagewinnr(t)])
+        if name ~= "" then
+            all[#all + 1] = name
+        end
+    end
+
+    local group = {}
+    for _, p in ipairs(all) do
+        if vim.fn.fnamemodify(p, ":t") == tail then
+            group[#group + 1] = p
+        end
+    end
+
+    if #group <= 1 then
+        return tail
+    end
+
+    local comps, max = {}, 0
+    for i, p in ipairs(group) do
+        comps[i] = rtl_components(vim.fn.fnamemodify(p, ":h"))
+        if #comps[i] > max then
+            max = #comps[i]
+        end
+    end
+
+    local col = 0
+    while col < max do
+        local first
+        local same = true
+        for _, parts in ipairs(comps) do
+            local v = parts[col + 1]
+            if v ~= nil then
+                if first == nil then
+                    first = v
+                elseif v ~= first then
+                    same = false
+                    break
+                end
+            end
+        end
+        if not same then
+            break
+        end
+        col = col + 1
+    end
+
+    local idx
+    for i, p in ipairs(group) do
+        if p == bufname then
+            idx = i
+            break
+        end
+    end
+
+    local prefix = idx and col < max and comps[idx][col + 1]
+    return prefix and (prefix .. ":" .. tail) or tail
 end
 
 function M.tabline()
