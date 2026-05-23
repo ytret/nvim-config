@@ -68,6 +68,18 @@ local function tab_label(tabnr)
     local buflist = vim.fn.tabpagebuflist(tabnr)
     local winnr = vim.fn.tabpagewinnr(tabnr)
     local bufnr = buflist[winnr]
+
+    if bufnr and vim.api.nvim_buf_is_valid(bufnr)
+        and vim.bo[bufnr].buftype == "terminal" then
+        for _, b in ipairs(buflist) do
+            if vim.api.nvim_buf_is_valid(b)
+                and vim.bo[b].buftype ~= "terminal" then
+                bufnr = b
+                break
+            end
+        end
+    end
+
     local bufname = vim.api.nvim_buf_get_name(bufnr)
 
     if bufname == "" then
