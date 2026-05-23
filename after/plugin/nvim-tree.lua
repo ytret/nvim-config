@@ -14,8 +14,6 @@ local function calc_size_pos()
     return width, height, col, row
 end
 
-local init_width, init_height, init_col, init_row = calc_size_pos()
-
 require("nvim-tree").setup({
     sort = {
         sorter = "case_sensitive",
@@ -23,14 +21,17 @@ require("nvim-tree").setup({
     view = {
         float = {
             enable = true,
-            open_win_config = {
-                relative = "editor",
-                border = "rounded",
-                width = init_width,
-                height = init_height,
-                col = init_col,
-                row = init_row,
-            },
+            open_win_config = function()
+                local width, height, col, row = calc_size_pos()
+                return {
+                    relative = "editor",
+                    border = "rounded",
+                    width = width,
+                    height = height,
+                    col = col,
+                    row = row,
+                }
+            end,
         },
     },
     renderer = {
@@ -48,22 +49,10 @@ vim.api.nvim_create_autocmd("VimResized", {
     group = vim.api.nvim_create_augroup("NvimTreeResize", { clear = true }),
 
     callback = function()
-        local api = require("nvim-tree.api")
-
         local width, height, col, row = calc_size_pos()
 
-        -- Update config for future opens
-        local view = require("nvim-tree.view")
-        if view and view.View and view.View.float then
-            view.View.float.width = width
-            view.View.float.height = height
-            view.View.float.col = col
-            view.View.float.row = row
-        end
-
-        -- If tree is open, resize the existing window
-        if api.tree.is_visible() then
-            local winid = api.tree.winid()
+        if require("nvim-tree.api").tree.is_visible() then
+            local winid = require("nvim-tree.api").tree.winid()
             if winid and vim.api.nvim_win_is_valid(winid) then
                 vim.api.nvim_win_set_config(winid, {
                     relative = "editor",
@@ -75,7 +64,6 @@ vim.api.nvim_create_autocmd("VimResized", {
             end
         end
 
-        -- Force redraw (important)
         vim.cmd("redraw")
     end,
 })
