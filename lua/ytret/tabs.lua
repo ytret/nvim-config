@@ -64,6 +64,13 @@ local function rtl_components(dir)
     return parts
 end
 
+local function truncate(s, max)
+    if #s > max then
+        return s:sub(1, max - 3) .. "..."
+    end
+    return s
+end
+
 local function tab_label(tabnr)
     local buflist = vim.fn.tabpagebuflist(tabnr)
     local winnr = vim.fn.tabpagewinnr(tabnr)
@@ -105,7 +112,7 @@ local function tab_label(tabnr)
     end
 
     if #group <= 1 then
-        return tail
+        return truncate(tail, 27)
     end
 
     local comps, max = {}, 0
@@ -146,7 +153,7 @@ local function tab_label(tabnr)
     end
 
     local prefix = idx and col < max and comps[idx][col + 1]
-    return prefix and (prefix .. ":" .. tail) or tail
+    return truncate(prefix and (prefix .. ":" .. tail) or tail, 27)
 end
 
 function M.tabline()
