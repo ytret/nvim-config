@@ -27,6 +27,59 @@ vim.keymap.set("n", "<leader>tt", open_current_buffer_in_new_tab)
 vim.keymap.set("n", "<leader>tq", close_tab)
 vim.keymap.set("n", "<leader>tc", close_tab)
 
+-- Move current tab to a chosen position
+local function prompt_move_tab()
+    local last_tabnr = vim.fn.tabpagenr("$")
+    if last_tabnr == 1 then
+        print("Only one tab")
+        return
+    end
+
+    local tabnr
+    if last_tabnr <= 9 then
+        vim.cmd("redraw")
+        if vim.opt.cmdheight._value ~= 0 then
+            print(string.format("Move to tab (1-%d): ", last_tabnr))
+        end
+
+        while true do
+            local ok, code = pcall(vim.fn.getchar)
+            if not ok or type(code) ~= "number" then
+                return
+            end
+            if code == 27 or code == 3 then
+                return
+            end
+            local char = vim.fn.nr2char(code)
+            local n = tonumber(char)
+            if n and n >= 1 and n <= last_tabnr then
+                tabnr = n
+                break
+            end
+        end
+    else
+        vim.cmd("redraw")
+        local ok, input = pcall(vim.fn.input, "Move to tab number: ")
+        if not ok or input == "" then
+            return
+        end
+        tabnr = tonumber(input)
+        if not tabnr or tabnr < 1 or tabnr > last_tabnr then
+            print("Invalid tab number")
+            return
+        end
+    end
+
+    local cur = vim.fn.tabpagenr()
+    if tabnr == 1 then
+        vim.cmd.tabmove("0")
+    else
+        vim.cmd.tabmove(tostring(tabnr <= cur and tabnr - 1 or tabnr))
+    end
+end
+
+vim.keymap.set("n", "<leader>tm", prompt_move_tab)
+
 -- Go to the prev/next/last tab
 vim.keymap.set("n", "<leader>tp", vim.cmd.tabprev)
 vim.keymap.set("n", "<leader>tn", vim.cmd.tabnext)
