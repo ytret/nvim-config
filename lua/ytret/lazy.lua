@@ -134,6 +134,15 @@ require("lazy").setup({
         },
     },
 
+    -- nvim config
+    {
+        "folke/lazydev.nvim",
+        ft = "lua",
+        opts = {
+            library = {},
+        },
+    },
+
     -- Other
     { "HiPhish/info.vim" },
 })
