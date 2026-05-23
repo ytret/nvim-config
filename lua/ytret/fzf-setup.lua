@@ -3,6 +3,7 @@ local M = {}
 local fzf_actions = require("fzf-lua.actions")
 local fzf_path = require("fzf-lua.path")
 local fzf_utils = require("fzf-lua.utils")
+local tabprompt = require("ytret.tabprompt")
 local window_picker = require("yt-window-picker")
 local yt_path = require("ytret.path")
 local uv = vim.uv or vim.loop
@@ -62,55 +63,24 @@ local function with_picked_tab(open_action)
             return
         end
 
-        vim.cmd("redraw")
-
-        local last_tabnr = vim.fn.tabpagenr("$")
-        local tabnr
-
-        if last_tabnr <= 9 then
-            if vim.opt.cmdheight._value ~= 0 then
-                print(string.format("Tab (1-%d, N): ", last_tabnr))
-            end
-
-            while true do
-                local ok, code = pcall(vim.fn.getchar)
-                if not ok then
-                    return
-                end
-                if code == 27 or code == 3 then
-                    return
-                end
-                local char = vim.fn.nr2char(code)
-                local upper = char:upper()
-                if upper == "N" then
-                    vim.cmd.tabnew()
-                    open_action(selected, action_opts)
-                    return
-                end
-                local n = tonumber(char)
-                if n and n >= 1 and n <= last_tabnr then
-                    tabnr = n
-                    break
-                end
-            end
-        else
-            local ok, input = pcall(vim.fn.input, "Tab number (or N for new): ")
-            if not ok or input == "" then
-                return
-            end
-            local upper = input:upper()
-            if upper == "N" then
+        local result = tabprompt.prompt_for_tab({
+            allow_new = true,
+            getchar_prompt = "Tab (1-%d, N): ",
+            input_prompt = "Tab number (or N for new): ",
+            on_new = function()
                 vim.cmd.tabnew()
                 open_action(selected, action_opts)
-                return
-            end
-            tabnr = tonumber(input)
-            if not tabnr or tabnr < 1 or tabnr > last_tabnr then
-                return
-            end
+            end,
+        })
+
+        if not result then
+            return
+        end
+        if result.new then
+            return
         end
 
-        vim.cmd.tabnext(tostring(tabnr))
+        vim.cmd.tabnext(tostring(result.tabnr))
         open_action(selected, action_opts)
     end
 end

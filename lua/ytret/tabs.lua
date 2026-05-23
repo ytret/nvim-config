@@ -1,5 +1,7 @@
 local M = {}
 
+local tabprompt = require("ytret.tabprompt")
+
 local function open_current_buffer_in_new_tab()
     local view = vim.fn.winsaveview()
     local bufname = vim.api.nvim_buf_get_name(0)
@@ -35,46 +37,24 @@ local function prompt_move_tab()
         return
     end
 
-    local tabnr
-    if last_tabnr <= 9 then
-        vim.cmd("redraw")
-        if vim.opt.cmdheight._value ~= 0 then
-            print(string.format("Move to tab (1-%d): ", last_tabnr))
-        end
+    vim.cmd("redraw")
 
-        while true do
-            local ok, code = pcall(vim.fn.getchar)
-            if not ok or type(code) ~= "number" then
-                return
-            end
-            if code == 27 or code == 3 then
-                return
-            end
-            local char = vim.fn.nr2char(code)
-            local n = tonumber(char)
-            if n and n >= 1 and n <= last_tabnr then
-                tabnr = n
-                break
-            end
-        end
-    else
-        vim.cmd("redraw")
-        local ok, input = pcall(vim.fn.input, "Move to tab number: ")
-        if not ok or input == "" then
-            return
-        end
-        tabnr = tonumber(input)
-        if not tabnr or tabnr < 1 or tabnr > last_tabnr then
-            print("Invalid tab number")
-            return
-        end
+    local result = tabprompt.prompt_for_tab({
+        last_tabnr = last_tabnr,
+        getchar_prompt = "Move to tab (1-%d): ",
+        input_prompt = "Move to tab number: ",
+        on_invalid = function() print("Invalid tab number") end,
+    })
+
+    if not result then
+        return
     end
 
     local cur = vim.fn.tabpagenr()
-    if tabnr == 1 then
+    if result.tabnr == 1 then
         vim.cmd.tabmove("0")
     else
-        vim.cmd.tabmove(tostring(tabnr <= cur and tabnr - 1 or tabnr))
+        vim.cmd.tabmove(tostring(result.tabnr <= cur and result.tabnr - 1 or result.tabnr))
     end
 end
 
@@ -273,10 +253,7 @@ end
 
 local function tab_str(tabnr, label, active)
     local hl = active and "%#TabLineSel#" or "%#TabLine#"
-    return string.format(
-        "%%%dT%s %d %s%s %%#TabLine#",
-        tabnr, hl, tabnr, hl, label
-    )
+    return string.format("%%%dT%s %d %s%s %%#TabLine#", tabnr, hl, tabnr, hl, label)
 end
 
 function M.tabline()
