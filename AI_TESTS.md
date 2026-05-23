@@ -78,7 +78,7 @@ The driving principle: **refactoring targets need tests first**.
 - Each theme name → correct highlight configs applied
 - Non-modus themes → background cleared
 - Trailing whitespace conditional
-- Tabline color variants (dark vs light)
+- Tabline highlight groups exist
 
 **Refactoring target:** Extract per-theme color tables into a plain data structure. The highlight-application loop would be the same for all themes.
 
