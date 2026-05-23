@@ -14,10 +14,18 @@ local function open_current_buffer_in_new_tab()
     vim.cmd.tabnew()
 end
 
+local function close_tab()
+    if vim.fn.tabpagenr("$") == 1 then
+        print("Cannot close the last tab")
+    else
+        vim.cmd.tabclose()
+    end
+end
+
 -- Open/close a tab
 vim.keymap.set("n", "<leader>tt", open_current_buffer_in_new_tab)
-vim.keymap.set("n", "<leader>tq", vim.cmd.tabclose)
-vim.keymap.set("n", "<leader>tc", vim.cmd.tabclose)
+vim.keymap.set("n", "<leader>tq", close_tab)
+vim.keymap.set("n", "<leader>tc", close_tab)
 
 -- Go to the prev/next/last tab
 vim.keymap.set("n", "<leader>tp", vim.cmd.tabprev)
