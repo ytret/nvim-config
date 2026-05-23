@@ -201,7 +201,19 @@ function M.tabline()
     local s, e = cur, cur
     local w = tabs[cur].w
 
-    -- Phase 1: expand without arrow reservations
+    -- Phase 1: first include up to 2 tabs on each side of the active tab
+    for _ = 1, 2 do
+        if e < total and w + 1 + tabs[e + 1].w <= avail then
+            e = e + 1
+            w = w + 1 + tabs[e].w
+        end
+        if s > 1 and w + 1 + tabs[s - 1].w <= avail then
+            s = s - 1
+            w = w + 1 + tabs[s].w
+        end
+    end
+
+    -- Phase 2: expand further outward while space allows
     while true do
         local changed = false
         while e < total and w + 1 + tabs[e + 1].w <= avail do
@@ -219,7 +231,7 @@ function M.tabline()
         end
     end
 
-    -- Phase 2: reserve space for scroll indicators
+    -- Phase 3: reserve space for scroll indicators
     local left_arrow = s > 1
     local right_arrow = e < total
     if left_arrow then
@@ -229,7 +241,7 @@ function M.tabline()
         avail = avail - 3
     end
 
-    -- Phase 3: retract tabs from the furthest side to fit arrows
+    -- Phase 4: retract tabs from the furthest side to fit arrows
     while w > avail and s < e do
         if cur - s <= e - cur then
             w = w - (1 + tabs[e].w)
