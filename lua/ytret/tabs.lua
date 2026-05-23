@@ -137,18 +137,69 @@ local function truncate(s, max)
     return s
 end
 
-local function tab_label(tabnr)
-    local buflist = vim.fn.tabpagebuflist(tabnr)
-    local winnr = vim.fn.tabpagewinnr(tabnr)
-    local bufnr = buflist[winnr]
+local last_normal_win = {}
 
-    if bufnr and vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].buftype == "terminal" then
-        for _, b in ipairs(buflist) do
-            if vim.api.nvim_buf_is_valid(b) and vim.bo[b].buftype ~= "terminal" then
-                bufnr = b
-                break
+vim.api.nvim_create_autocmd("WinEnter", {
+    group = vim.api.nvim_create_augroup("TabLabelTracking", { clear = true }),
+    callback = function()
+        local winid = vim.api.nvim_get_current_win()
+        local cfg = vim.api.nvim_win_get_config(winid)
+        if cfg.relative == "" then
+            last_normal_win[vim.fn.tabpagenr()] = winid
+        end
+    end,
+})
+
+do
+    local winid = vim.api.nvim_get_current_win()
+    local cfg = vim.api.nvim_win_get_config(winid)
+    if cfg.relative == "" then
+        last_normal_win[vim.fn.tabpagenr()] = winid
+    end
+end
+
+local function tab_label(tabnr)
+    local cur_winid = vim.api.nvim_tabpage_get_win(tabnr)
+    local cfg = vim.api.nvim_win_get_config(cur_winid)
+    local bufnr
+
+    if cfg.relative == "" then
+        local b = vim.api.nvim_win_get_buf(cur_winid)
+        if b and vim.api.nvim_buf_is_valid(b) and vim.bo[b].buftype ~= "terminal" then
+            bufnr = b
+        end
+    end
+
+    if not bufnr then
+        local tracked = last_normal_win[tabnr]
+        if tracked and vim.api.nvim_win_is_valid(tracked) then
+            local tcfg = vim.api.nvim_win_get_config(tracked)
+            if tcfg.relative == "" then
+                local b = vim.api.nvim_win_get_buf(tracked)
+                if b and vim.api.nvim_buf_is_valid(b) and vim.bo[b].buftype ~= "terminal" then
+                    bufnr = b
+                end
             end
         end
+    end
+
+    if not bufnr then
+        for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(tabnr)) do
+            local wcfg = vim.api.nvim_win_get_config(winid)
+            if wcfg.relative == "" then
+                local b = vim.api.nvim_win_get_buf(winid)
+                if b and vim.api.nvim_buf_is_valid(b) and vim.bo[b].buftype ~= "terminal" then
+                    bufnr = b
+                    break
+                end
+            end
+        end
+    end
+
+    if not bufnr then
+        local buflist = vim.fn.tabpagebuflist(tabnr)
+        local winnr = vim.fn.tabpagewinnr(tabnr)
+        bufnr = buflist[winnr]
     end
 
     local bufname = vim.api.nvim_buf_get_name(bufnr)
