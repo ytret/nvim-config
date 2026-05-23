@@ -156,23 +156,102 @@ local function tab_label(tabnr)
     return truncate(prefix and (prefix .. ":" .. tail) or tail, 27)
 end
 
+local function tab_str(tabnr, label, active)
+    return string.format(
+        "%%%dT%%#TabLine# %d %s%s%%#TabLine# ",
+        tabnr, tabnr,
+        active and "%#TabLineSel#" or "%#TabLine#",
+        label
+    )
+end
+
 function M.tabline()
-    local parts = {}
+    local total = vim.fn.tabpagenr("$")
     local cur = vim.fn.tabpagenr()
+    local cols = vim.o.columns
 
-    for tabnr = 1, vim.fn.tabpagenr("$") do
-        if tabnr > 1 then
-            table.insert(parts, "%#TabLineFill#|")
-        end
-
-        table.insert(parts, string.format(
-            "%%%dT%%#TabLine# %d %s%s%%#TabLine# ",
-            tabnr, tabnr,
-            tabnr == cur and "%#TabLineSel#" or "%#TabLine#",
-            tab_label(tabnr)
-        ))
+    local tabs = {}
+    for tabnr = 1, total do
+        local label = tab_label(tabnr)
+        tabs[tabnr] = {
+            label = label,
+            w = 1 + #tostring(tabnr) + 1 + #label + 1,
+        }
     end
 
+    -- Total width if all tabs are rendered
+    local total_w = tabs[1].w
+    for tabnr = 2, total do
+        total_w = total_w + 1 + tabs[tabnr].w
+    end
+
+    if total_w <= cols then
+        local parts = {}
+        for tabnr = 1, total do
+            if tabnr > 1 then
+                table.insert(parts, "%#TabLineFill#|")
+            end
+            table.insert(parts, tab_str(tabnr, tabs[tabnr].label, tabnr == cur))
+        end
+        table.insert(parts, "%#TabLineFill#%T")
+        return table.concat(parts)
+    end
+
+    -- Scrolling: find a contiguous range that fits and includes the active tab
+    local avail = cols
+    local s, e = cur, cur
+    local w = tabs[cur].w
+
+    -- Phase 1: expand without arrow reservations
+    while true do
+        local changed = false
+        while e < total and w + 1 + tabs[e + 1].w <= avail do
+            e = e + 1
+            w = w + 1 + tabs[e].w
+            changed = true
+        end
+        while s > 1 and w + 1 + tabs[s - 1].w <= avail do
+            s = s - 1
+            w = w + 1 + tabs[s].w
+            changed = true
+        end
+        if not changed then break end
+    end
+
+    -- Phase 2: reserve space for scroll indicators
+    local left_arrow = s > 1
+    local right_arrow = e < total
+    if left_arrow then avail = avail - 3 end
+    if right_arrow then avail = avail - 3 end
+
+    -- Phase 3: retract tabs from the furthest side to fit arrows
+    while w > avail and s < e do
+        if cur - s <= e - cur then
+            w = w - (1 + tabs[e].w)
+            e = e - 1
+        else
+            w = w - (1 + tabs[s].w)
+            s = s + 1
+        end
+    end
+    -- Update arrow flags after possible retraction
+    left_arrow = s > 1
+    right_arrow = e < total
+
+    -- Render
+    local parts = {}
+    if left_arrow then
+        table.insert(parts, "%#TabLineFill# < ")
+    end
+    for tabnr = s, e do
+        if tabnr > s then
+            table.insert(parts, "%#TabLineFill#|")
+        end
+        table.insert(parts, tab_str(tabnr, tabs[tabnr].label, tabnr == cur))
+    end
+    if right_arrow then
+        table.insert(parts, "%#TabLineFill# > ")
+    end
     table.insert(parts, "%#TabLineFill#%T")
     return table.concat(parts)
 end
