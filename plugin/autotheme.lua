@@ -50,6 +50,17 @@ local function apply_theme_file()
         end
     end
 
+    -- Tabline colors: inactive tabs get uniform bg, active tab is brighter
+    if vim.o.background == "dark" then
+        vim.api.nvim_set_hl(0, "TabLine",     { bg = "#2e2e2e", fg = "#888888" })
+        vim.api.nvim_set_hl(0, "TabLineSel",  { bg = "#505050", fg = "#ffffff" })
+        vim.api.nvim_set_hl(0, "TabLineFill", { bg = "#1a1a1a", fg = "#444444" })
+    else
+        vim.api.nvim_set_hl(0, "TabLine",     { bg = "#d0d0d0", fg = "#555555" })
+        vim.api.nvim_set_hl(0, "TabLineSel",  { bg = "#ffffff", fg = "#111111" })
+        vim.api.nvim_set_hl(0, "TabLineFill", { bg = "#e8e8e8", fg = "#b0b0b0" })
+    end
+
     ---@diagnostic disable-next-line: undefined-global
     if YTRET_HIGHLIGHT == true then
         vim.cmd.highlight(
