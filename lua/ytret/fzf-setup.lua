@@ -201,6 +201,27 @@ function M.setup(opts)
             ["enter"] = lsp_file_edit_prefer_rel,
             ["ctrl-t"] = with_picked_tab(lsp_file_edit_prefer_rel),
         },
+        document_symbols = {
+            actions = {
+                ["ctrl-t"] = with_picked_tab(lsp_file_edit_prefer_rel),
+            },
+        },
+        workspace_symbols = {
+            actions = {
+                ["ctrl-t"] = with_picked_tab(lsp_file_edit_prefer_rel),
+            },
+        },
+        finder = {
+            actions = {
+                ["ctrl-t"] = with_picked_tab(lsp_file_edit_prefer_rel),
+            },
+        },
+    })
+    opts.diagnostics = vim.tbl_deep_extend("force", opts.diagnostics or {}, {
+        actions = {
+            ["default"] = with_picked_window(fzf_actions.file_edit),
+            ["ctrl-t"] = with_picked_tab(fzf_actions.file_edit),
+        },
     })
 
     return opts
