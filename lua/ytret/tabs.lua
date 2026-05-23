@@ -133,6 +133,10 @@ function M.tabline()
     local parts = {}
 
     for tabnr = 1, vim.fn.tabpagenr("$") do
+        if tabnr > 1 then
+            table.insert(parts, "%#TabLineFill#|")
+        end
+
         local is_current = tabnr == vim.fn.tabpagenr()
         local hl = is_current and "%#TabLineSel#" or "%#TabLine#"
 
