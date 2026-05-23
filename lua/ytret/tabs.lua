@@ -146,9 +146,10 @@ function M.tabline()
         end
 
         local is_current = tabnr == vim.fn.tabpagenr()
-        local hl = is_current and "%#TabLineSel#" or "%#TabLine#"
+        local num_hl = "%#TabLine#"
+        local name_hl = is_current and "%#TabLineSel#" or "%#TabLine#"
 
-        table.insert(parts, string.format("%%%dT%s %s ", tabnr, hl, tab_label(tabnr)))
+        table.insert(parts, string.format("%%%dT%s%d %s%s ", tabnr, num_hl, tabnr, name_hl, tab_label(tabnr)))
     end
 
     table.insert(parts, "%#TabLineFill#%T")
