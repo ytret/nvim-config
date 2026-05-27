@@ -117,6 +117,12 @@ require("lazy").setup({
 
     -- Code editing
     { "mbbill/undotree" },
+    {
+        "nvim-treesitter/nvim-treesitter-textobjects",
+        branch = "main",
+        init = function() vim.g.no_plugin_maps = true end,
+        config = function() end,
+    },
     { "stevearc/conform.nvim", opts = {} },
     {
         "hankertrix/nerd_column.nvim",
