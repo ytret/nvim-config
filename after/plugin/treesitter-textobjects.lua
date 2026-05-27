@@ -15,3 +15,9 @@ vim.keymap.set({ "x", "o" }, "ia", gen_call(to_sel.select_textobject, "@paramete
 vim.keymap.set({ "n", "x", "o" }, "]s", gen_call(to_move.goto_next_start, "@statement.outer"))
 vim.keymap.set({ "n", "x", "o" }, "[s", gen_call(to_move.goto_previous_start, "@statement.outer"))
 vim.keymap.set({ "x", "o" }, "as", gen_call(to_sel.select_textobject, "@statement.outer"))
+
+-- Functions
+vim.keymap.set({ "n", "x", "o" }, "]m", gen_call(to_move.goto_next_start, "@function.outer"))
+vim.keymap.set({ "n", "x", "o" }, "[m", gen_call(to_move.goto_previous_start, "@function.outer"))
+vim.keymap.set({ "x", "o" }, "am", gen_call(to_sel.select_textobject, "@function.outer"))
+vim.keymap.set({ "x", "o" }, "im", gen_call(to_sel.select_textobject, "@function.inner"))
