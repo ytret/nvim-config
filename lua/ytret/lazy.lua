@@ -117,9 +117,6 @@ require("lazy").setup({
 
     -- Code editing
     { "mbbill/undotree" },
-    { "aaronik/treewalker.nvim", name = "treewalker", opts = {
-        jumplist = true,
-    } },
     { "stevearc/conform.nvim", opts = {} },
     {
         "hankertrix/nerd_column.nvim",
