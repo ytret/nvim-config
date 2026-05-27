@@ -1,5 +1,7 @@
 vim.g.mapleader = " "
 
+vim.keymap.set('n', '<Space>', '<Nop>', { silent = true })
+
 vim.keymap.set("n", "J", "mzJ`z")
 vim.keymap.set("n", "<C-u>", "<C-u>zz")
 vim.keymap.set("n", "<C-d>", "<C-d>zz")
