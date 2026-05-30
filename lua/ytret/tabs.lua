@@ -2,7 +2,8 @@ local M = {}
 
 local tabprompt = require("ytret.tabprompt")
 
-local function open_current_buffer_in_new_tab()
+local function open_current_buffer_in_new_tab(before)
+    local cur = before and vim.fn.tabpagenr() or nil
     local view = vim.fn.winsaveview()
     local bufname = vim.api.nvim_buf_get_name(0)
     local has_file = bufname ~= ""
@@ -10,10 +11,18 @@ local function open_current_buffer_in_new_tab()
     if has_file then
         vim.cmd.tabnew("%")
         vim.fn.winrestview(view)
-        return
+    else
+        vim.cmd.tabnew()
     end
 
-    vim.cmd.tabnew()
+    if cur then
+        local target = cur - 1
+        if target == 0 then
+            vim.cmd.tabmove("0")
+        else
+            vim.cmd.tabmove(tostring(target))
+        end
+    end
 end
 
 local function close_tab()
@@ -25,7 +34,8 @@ local function close_tab()
 end
 
 -- Open/close a tab
-vim.keymap.set("n", "<leader>tt", open_current_buffer_in_new_tab)
+vim.keymap.set("n", "<leader>tt", function() open_current_buffer_in_new_tab(false) end)
+vim.keymap.set("n", "<leader>tb", function() open_current_buffer_in_new_tab(true) end)
 vim.keymap.set("n", "<leader>tq", close_tab)
 vim.keymap.set("n", "<leader>tc", close_tab)
 
