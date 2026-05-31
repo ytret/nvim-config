@@ -146,6 +146,7 @@ require("lazy").setup({
             modes = {
                 char = { keys = {} },
             },
+            label = { rainbow = { enabled = true, shade = 4 } },
         },
         keys = {
             { "<c-s>", mode = { "n", "x", "o" }, function() require("flash").jump() end },
