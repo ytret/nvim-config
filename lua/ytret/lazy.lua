@@ -140,7 +140,7 @@ require("lazy").setup({
         },
     },
     {
-        "folke/flash.nvim",
+        "ytret/flash.nvim",
         event = "VeryLazy",
         opts = {
             modes = {
