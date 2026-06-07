@@ -2,7 +2,7 @@ local M = {}
 
 local tabprompt = require("ytret.tabprompt")
 
-function M.open_in_picked_tab(action_fn)
+local function open_in_picked_tab(action_fn)
     local result = tabprompt.prompt_for_tab({
         allow_new = true,
         getchar_prompt = "Tab (1-%d, N): ",
@@ -286,7 +286,7 @@ local function tab_str(tabnr, label, active)
     return string.format("%%%dT%s %d %s%s %%#TabLine#", tabnr, hl, tabnr, hl, label)
 end
 
-function M._scrolled_range(tabs, total, cur, cols)
+local function _scrolled_range(tabs, total, cur, cols)
     if #tabs == 0 or total == 0 then
         return { start = 1, end_ = 1, left_arrow = false, right_arrow = false }
     end
@@ -361,7 +361,7 @@ function M._scrolled_range(tabs, total, cur, cols)
     return { start = s, end_ = e, left_arrow = left_arrow, right_arrow = right_arrow }
 end
 
-function M.tabline()
+local function tabline()
     local total = vim.fn.tabpagenr("$")
     local cur = vim.fn.tabpagenr()
     local cols = vim.o.columns
@@ -394,7 +394,7 @@ function M.tabline()
         return table.concat(parts)
     end
 
-    local range = M._scrolled_range(tabs, total, cur, cols)
+    local range = _scrolled_range(tabs, total, cur, cols)
 
     local parts = {}
     if range.left_arrow then
@@ -412,6 +412,10 @@ function M.tabline()
     table.insert(parts, "%#TabLineFill#%T")
     return table.concat(parts)
 end
+
+M.open_in_picked_tab = open_in_picked_tab
+M._scrolled_range = _scrolled_range
+M.tabline = tabline
 
 vim.o.tabline = "%!v:lua.require'ytret.tabs'.tabline()"
 
