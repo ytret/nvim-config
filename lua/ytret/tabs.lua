@@ -60,7 +60,6 @@ end
 
 -- Open/close a tab
 vim.keymap.set("n", "<leader>tt", function() open_current_buffer_in_new_tab(false) end)
-vim.keymap.set("n", "<leader>tb", function() open_current_buffer_in_new_tab(true) end)
 vim.keymap.set("n", "<leader>tq", close_tab)
 vim.keymap.set("n", "<leader>tc", close_tab)
 
@@ -108,9 +107,23 @@ vim.keymap.set("n", "<M-}>", function()
     end
 end)
 
--- Go to the prev/next/last tab
-vim.keymap.set("n", "<leader>tp", vim.cmd.tabprev)
-vim.keymap.set("n", "<leader>tn", vim.cmd.tabnext)
+-- Open a new tab at the last, after, or before the active tab
+vim.keymap.set("n", "<leader>tn", function()
+    vim.cmd.tabnew()
+    vim.cmd("tabmove")
+end)
+vim.keymap.set("n", "<leader>ta", function()
+    local cur = vim.fn.tabpagenr()
+    vim.cmd.tabnew()
+    vim.cmd.tabmove(tostring(cur))
+end)
+vim.keymap.set("n", "<leader>tb", function()
+    local cur = vim.fn.tabpagenr()
+    vim.cmd.tabnew()
+    vim.cmd.tabmove(tostring(cur - 1))
+end)
+
+-- Go to prev/next/last tab
 vim.keymap.set("n", "<M-[>", vim.cmd.tabprev)
 vim.keymap.set("n", "<M-]>", vim.cmd.tabnext)
 vim.keymap.set("n", "<leader>tl", "g<tab>")
