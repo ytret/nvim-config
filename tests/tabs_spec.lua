@@ -1,3 +1,4 @@
+local tabprompt = require("ytret.tabprompt")
 local tabs = require("ytret.tabs")
 
 describe("tabs", function()
@@ -24,6 +25,115 @@ describe("tabs", function()
                 vim.api.nvim_buf_delete(b, { force = true })
             end
         end
+    end)
+
+    describe("open_in_picked_tab", function()
+        local saved_prompt
+
+        before_each(function()
+            saved_prompt = tabprompt.prompt_for_tab
+            -- Ensure we have exactly 3 tabs, on tab 2
+            while vim.fn.tabpagenr("$") < 3 do
+                vim.cmd("tabnew")
+            end
+            while vim.fn.tabpagenr("$") > 3 do
+                vim.cmd("tabclose 4")
+            end
+            vim.cmd("tabnext 2")
+            assert.are.equal(3, vim.fn.tabpagenr("$"))
+            assert.are.equal(2, vim.fn.tabpagenr())
+        end)
+
+        after_each(function()
+            tabprompt.prompt_for_tab = saved_prompt
+        end)
+
+        it("creates a new tab at the end when prompt returns { new = 'end' }", function()
+            tabprompt.prompt_for_tab = function() return { new = "end" } end
+
+            tabs.open_in_picked_tab(function() end)
+
+            assert.are.equal(4, vim.fn.tabpagenr("$"))
+            assert.are.equal(4, vim.fn.tabpagenr())
+        end)
+
+        it("creates a new tab after the active one when prompt returns { new = 'after' }", function()
+            tabprompt.prompt_for_tab = function() return { new = "after" } end
+
+            tabs.open_in_picked_tab(function() end)
+
+            assert.are.equal(4, vim.fn.tabpagenr("$"))
+            assert.are.equal(3, vim.fn.tabpagenr())
+        end)
+
+        it("creates a new tab before the active one when prompt returns { new = 'before' }", function()
+            tabprompt.prompt_for_tab = function() return { new = "before" } end
+
+            tabs.open_in_picked_tab(function() end)
+
+            assert.are.equal(4, vim.fn.tabpagenr("$"))
+            assert.are.equal(2, vim.fn.tabpagenr())
+        end)
+
+        it("navigates to an existing tab when prompt returns { tabnr = n }", function()
+            tabprompt.prompt_for_tab = function() return { tabnr = 3 } end
+
+            tabs.open_in_picked_tab(function() end)
+
+            assert.are.equal(3, vim.fn.tabpagenr("$"))
+            assert.are.equal(3, vim.fn.tabpagenr())
+        end)
+
+        it("does nothing when prompt returns nil (cancelled)", function()
+            tabprompt.prompt_for_tab = function() return nil end
+
+            tabs.open_in_picked_tab(function() end)
+
+            assert.are.equal(3, vim.fn.tabpagenr("$"))
+            assert.are.equal(2, vim.fn.tabpagenr())
+        end)
+
+        it("runs the action in the resulting tab context", function()
+            tabprompt.prompt_for_tab = function() return { new = "after" } end
+
+            local called = false
+            tabs.open_in_picked_tab(function()
+                called = true
+                assert.are.equal(3, vim.fn.tabpagenr())
+            end)
+
+            assert.is_true(called)
+        end)
+
+        it("positions 'end' tab correctly even when original tab is at the end", function()
+            vim.cmd("tabnext 3")
+            tabprompt.prompt_for_tab = function() return { new = "end" } end
+
+            tabs.open_in_picked_tab(function() end)
+
+            assert.are.equal(4, vim.fn.tabpagenr("$"))
+            assert.are.equal(4, vim.fn.tabpagenr())
+        end)
+
+        it("positions 'before' tab correctly when original tab is the first", function()
+            vim.cmd("tabnext 1")
+            tabprompt.prompt_for_tab = function() return { new = "before" } end
+
+            tabs.open_in_picked_tab(function() end)
+
+            assert.are.equal(4, vim.fn.tabpagenr("$"))
+            assert.are.equal(1, vim.fn.tabpagenr())
+        end)
+
+        it("positions 'after' tab correctly when original tab is the last", function()
+            vim.cmd("tabnext 3")
+            tabprompt.prompt_for_tab = function() return { new = "after" } end
+
+            tabs.open_in_picked_tab(function() end)
+
+            assert.are.equal(4, vim.fn.tabpagenr("$"))
+            assert.are.equal(4, vim.fn.tabpagenr())
+        end)
     end)
 
     describe("tabline()", function()
