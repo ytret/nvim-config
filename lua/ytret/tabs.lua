@@ -3,22 +3,27 @@ local M = {}
 local tabprompt = require("ytret.tabprompt")
 
 local function open_in_picked_tab(action_fn)
+    local cur = vim.fn.tabpagenr()
     local result = tabprompt.prompt_for_tab({
         allow_new = true,
-        getchar_prompt = "Tab (1-%d, N): ",
-        input_prompt = "Tab number (or N for new): ",
-        on_new = function()
-            vim.cmd.tabnew()
-            action_fn()
-        end,
+        getchar_prompt = "Tab (1-%d, N/A/B): ",
+        input_prompt = "Tab number (or N/A/B): ",
     })
     if not result then
         return
     end
-    if result.new then
-        return
+    if result.new == "end" then
+        vim.cmd.tabnew()
+        vim.cmd("tabmove")
+    elseif result.new == "after" then
+        vim.cmd.tabnew()
+        vim.cmd.tabmove(tostring(cur))
+    elseif result.new == "before" then
+        vim.cmd.tabnew()
+        vim.cmd.tabmove(tostring(cur - 1))
+    else
+        vim.cmd.tabnext(tostring(result.tabnr))
     end
-    vim.cmd.tabnext(tostring(result.tabnr))
     action_fn()
 end
 

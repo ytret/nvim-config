@@ -59,32 +59,40 @@ describe("prompt_for_tab", function()
             assert.is_nil(tabprompt.prompt_for_tab({ last_tabnr = 5 }))
         end)
 
-        it("returns { new = true } when 'N' is pressed and allow_new is set", function()
+        it("returns { new = 'end' } when 'N' is pressed", function()
             tabprompt._getchar = function() return 78 end
             tabprompt._nr2char = function(c) return string.char(c) end
             tabprompt._cmdheight = function() return 1 end
             tabprompt._print = function() end
-            local new_called = false
-            local result = tabprompt.prompt_for_tab({
-                last_tabnr = 5,
-                allow_new = true,
-                on_new = function() new_called = true end,
-            })
-            assert.same({ new = true }, result)
-            assert.is_true(new_called)
+            local result = tabprompt.prompt_for_tab({ last_tabnr = 5, allow_new = true })
+            assert.same({ new = "end" }, result)
         end)
 
-        it("returns { new = true } for lowercase 'n'", function()
+        it("returns { new = 'end' } for lowercase 'n'", function()
             tabprompt._getchar = function() return 110 end
             tabprompt._nr2char = function(c) return string.char(c) end
             tabprompt._cmdheight = function() return 1 end
             tabprompt._print = function() end
-            local result = tabprompt.prompt_for_tab({
-                last_tabnr = 5,
-                allow_new = true,
-                on_new = function() end,
-            })
-            assert.same({ new = true }, result)
+            local result = tabprompt.prompt_for_tab({ last_tabnr = 5, allow_new = true })
+            assert.same({ new = "end" }, result)
+        end)
+
+        it("returns { new = 'after' } when 'A' is pressed", function()
+            tabprompt._getchar = function() return 65 end
+            tabprompt._nr2char = function(c) return string.char(c) end
+            tabprompt._cmdheight = function() return 1 end
+            tabprompt._print = function() end
+            local result = tabprompt.prompt_for_tab({ last_tabnr = 5, allow_new = true })
+            assert.same({ new = "after" }, result)
+        end)
+
+        it("returns { new = 'before' } when 'B' is pressed", function()
+            tabprompt._getchar = function() return 66 end
+            tabprompt._nr2char = function(c) return string.char(c) end
+            tabprompt._cmdheight = function() return 1 end
+            tabprompt._print = function() end
+            local result = tabprompt.prompt_for_tab({ last_tabnr = 5, allow_new = true })
+            assert.same({ new = "before" }, result)
         end)
 
         it("skips print when cmdheight is 0", function()
@@ -149,26 +157,28 @@ describe("prompt_for_tab", function()
             assert.is_nil(tabprompt.prompt_for_tab({ last_tabnr = 15 }))
         end)
 
-        it("returns { new = true } for 'N' input with allow_new", function()
+        it("returns { new = 'end' } for 'N' input", function()
             tabprompt._input = function(_) return "N" end
-            local new_called = false
-            local result = tabprompt.prompt_for_tab({
-                last_tabnr = 15,
-                allow_new = true,
-                on_new = function() new_called = true end,
-            })
-            assert.same({ new = true }, result)
-            assert.is_true(new_called)
+            local result = tabprompt.prompt_for_tab({ last_tabnr = 15, allow_new = true })
+            assert.same({ new = "end" }, result)
         end)
 
-        it("returns { new = true } for lowercase 'n' input with allow_new", function()
+        it("returns { new = 'end' } for lowercase 'n' input", function()
             tabprompt._input = function(_) return "n" end
-            local result = tabprompt.prompt_for_tab({
-                last_tabnr = 15,
-                allow_new = true,
-                on_new = function() end,
-            })
-            assert.same({ new = true }, result)
+            local result = tabprompt.prompt_for_tab({ last_tabnr = 15, allow_new = true })
+            assert.same({ new = "end" }, result)
+        end)
+
+        it("returns { new = 'after' } for 'A' input", function()
+            tabprompt._input = function(_) return "A" end
+            local result = tabprompt.prompt_for_tab({ last_tabnr = 15, allow_new = true })
+            assert.same({ new = "after" }, result)
+        end)
+
+        it("returns { new = 'before' } for 'B' input", function()
+            tabprompt._input = function(_) return "B" end
+            local result = tabprompt.prompt_for_tab({ last_tabnr = 15, allow_new = true })
+            assert.same({ new = "before" }, result)
         end)
     end)
 

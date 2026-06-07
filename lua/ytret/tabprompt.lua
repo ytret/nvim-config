@@ -12,7 +12,6 @@ function M.prompt_for_tab(opts)
     local allow_new = opts.allow_new
     local getchar_prompt = opts.getchar_prompt or "Tab (1-%d): "
     local input_prompt = opts.input_prompt or "Tab number: "
-    local on_new = opts.on_new
     local on_invalid = opts.on_invalid
 
     if last_tabnr <= 9 then
@@ -28,11 +27,15 @@ function M.prompt_for_tab(opts)
                 return nil
             end
             local char = M._nr2char(code)
-            if allow_new and char:upper() == "N" then
-                if on_new then
-                    on_new()
+            if allow_new then
+                local upper = char:upper()
+                if upper == "N" then
+                    return { new = "end" }
+                elseif upper == "A" then
+                    return { new = "after" }
+                elseif upper == "B" then
+                    return { new = "before" }
                 end
-                return { new = true }
             end
             local n = tonumber(char)
             if n and n >= 1 and n <= last_tabnr then
@@ -47,10 +50,11 @@ function M.prompt_for_tab(opts)
         if allow_new then
             local upper = input:upper()
             if upper == "N" then
-                if on_new then
-                    on_new()
-                end
-                return { new = true }
+                return { new = "end" }
+            elseif upper == "A" then
+                return { new = "after" }
+            elseif upper == "B" then
+                return { new = "before" }
             end
         end
         local n = tonumber(input)
