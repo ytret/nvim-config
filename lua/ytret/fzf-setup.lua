@@ -3,7 +3,7 @@ local M = {}
 local fzf_actions = require("fzf-lua.actions")
 local fzf_path = require("fzf-lua.path")
 local fzf_utils = require("fzf-lua.utils")
-local tabprompt = require("ytret.tabprompt")
+local tabs = require("ytret.tabs")
 local window_picker = require("yt-window-picker")
 local yt_path = require("ytret.path")
 local uv = vim.uv or vim.loop
@@ -62,26 +62,9 @@ local function with_picked_tab(open_action)
         if not has_real_target(selected, action_opts) then
             return
         end
-
-        local result = tabprompt.prompt_for_tab({
-            allow_new = true,
-            getchar_prompt = "Tab (1-%d, N): ",
-            input_prompt = "Tab number (or N for new): ",
-            on_new = function()
-                vim.cmd.tabnew()
-                open_action(selected, action_opts)
-            end,
-        })
-
-        if not result then
-            return
-        end
-        if result.new then
-            return
-        end
-
-        vim.cmd.tabnext(tostring(result.tabnr))
-        open_action(selected, action_opts)
+        tabs.open_in_picked_tab(function()
+            open_action(selected, action_opts)
+        end)
     end
 end
 

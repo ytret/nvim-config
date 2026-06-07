@@ -2,6 +2,26 @@ local M = {}
 
 local tabprompt = require("ytret.tabprompt")
 
+function M.open_in_picked_tab(action_fn)
+    local result = tabprompt.prompt_for_tab({
+        allow_new = true,
+        getchar_prompt = "Tab (1-%d, N): ",
+        input_prompt = "Tab number (or N for new): ",
+        on_new = function()
+            vim.cmd.tabnew()
+            action_fn()
+        end,
+    })
+    if not result then
+        return
+    end
+    if result.new then
+        return
+    end
+    vim.cmd.tabnext(tostring(result.tabnr))
+    action_fn()
+end
+
 local function open_current_buffer_in_new_tab(before)
     local cur = before and vim.fn.tabpagenr() or nil
     local view = vim.fn.winsaveview()

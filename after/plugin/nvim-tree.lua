@@ -1,5 +1,5 @@
 local DirectoryNode = require("nvim-tree.node.directory")
-local tabprompt = require("ytret.tabprompt")
+local tabs = require("ytret.tabs")
 
 local function open_in_picked_tab(node)
     local dir = node:as(DirectoryNode)
@@ -13,25 +13,9 @@ local function open_in_picked_tab(node)
         return
     end
 
-    local result = tabprompt.prompt_for_tab({
-        allow_new = true,
-        getchar_prompt = "Tab (1-%d, N): ",
-        input_prompt = "Tab number (or N for new): ",
-        on_new = function()
-            vim.cmd.tabnew()
-            vim.cmd.edit(vim.fn.fnameescape(path))
-        end,
-    })
-
-    if not result then
-        return
-    end
-    if result.new then
-        return
-    end
-
-    vim.cmd.tabnext(tostring(result.tabnr))
-    vim.cmd.edit(vim.fn.fnameescape(path))
+    tabs.open_in_picked_tab(function()
+        vim.cmd.edit(vim.fn.fnameescape(path))
+    end)
 end
 
 local function calc_size_pos()
