@@ -1,6 +1,6 @@
 vim.g.mapleader = " "
 
-vim.keymap.set('n', '<Space>', '<Nop>', { silent = true })
+vim.keymap.set("n", "<Space>", "<Nop>", { silent = true })
 
 vim.keymap.set("n", "J", "mzJ`z")
 vim.keymap.set("n", "<C-u>", "<C-u>zz")
@@ -36,5 +36,11 @@ vim.keymap.set("c", "<Esc>b", "<S-Left>")
 -- Delete a single char, not indentation
 vim.keymap.set("i", "<C-h>", "<Left><C-o>x")
 
--- Remove whitespace
-vim.keymap.set("n", "<leader>rw", [[ :let _s=@/<Bar>:%s/\s\+$//e<Bar>:let @/=_s<Bar><CR> ]])
+-- Remove whitespace (preserves cursor position, no jumplist/mark pollution)
+vim.keymap.set("n", "<leader>rw", function()
+    local save = vim.fn.winsaveview()
+    local s = vim.fn.getreg("/")
+    vim.cmd([[%s/\s\+$//e]])
+    vim.fn.setreg("/", s)
+    vim.fn.winrestview(save)
+end, { desc = "Remove trailing whitespace" })
