@@ -44,3 +44,10 @@ vim.keymap.set("n", "<leader>rw", function()
     vim.fn.setreg("/", s)
     vim.fn.winrestview(save)
 end, { desc = "Remove trailing whitespace" })
+
+vim.keymap.set(
+    "n",
+    "<leader>hl",
+    function() vim.o.hlsearch = not vim.o.hlsearch end,
+    { desc = "Toggle hlsearch" }
+)
