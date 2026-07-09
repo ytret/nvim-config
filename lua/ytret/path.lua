@@ -31,7 +31,7 @@ local function can_buffer_be_reused(bufnr, rel_path)
 end
 
 function M.bufadd_prefer_rel(abs_path)
-    local rel_path = vim.fs.relpath(vim.fn.getcwd(), abs_path)
+    local rel_path = vim.fs.relpath(canonical_path(vim.fn.getcwd()), canonical_path(abs_path))
     local target_path = rel_path or abs_path
     local existing_bufnr = find_buffer_by_path(abs_path)
 
@@ -74,7 +74,7 @@ function M.set_buf_listed(bufnr)
 end
 
 function M.path_prefer_rel(abs_path)
-    local rel_path = vim.fs.relpath(vim.fn.getcwd(), abs_path)
+    local rel_path = vim.fs.relpath(canonical_path(vim.fn.getcwd()), canonical_path(abs_path))
     return rel_path or abs_path
 end
 
