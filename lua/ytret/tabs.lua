@@ -2,6 +2,29 @@ local M = {}
 
 local tabprompt = require("ytret.tabprompt")
 
+-- Track the global cwd ourselves because getcwd(-1) is unreliable when
+-- :tcd has been used in any tab (it can return the tab-local value).
+local global_cwd = vim.fn.getcwd()
+
+vim.api.nvim_create_autocmd("DirChanged", {
+    pattern = "global",
+    callback = function(args)
+        global_cwd = vim.fs.normalize(args.file)
+    end,
+})
+
+-- When a new tab is created from a tab with :tcd, Neovim copies the tab-local
+-- directory to the new tab. Reset it back to the global cwd so new tabs always
+-- start from :cd (global) rather than leaking a parent tab's :tcd.
+vim.api.nvim_create_autocmd("TabNew", {
+    callback = function()
+        local cwd = vim.fs.normalize(vim.fn.getcwd())
+        if cwd ~= global_cwd then
+            vim.cmd("tcd " .. global_cwd)
+        end
+    end,
+})
+
 local function open_in_picked_tab(action_fn)
     local cur = vim.fn.tabpagenr()
     local result = tabprompt.prompt_for_tab({
