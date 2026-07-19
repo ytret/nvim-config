@@ -418,10 +418,12 @@ local function tabline()
     for tabnr = 1, total do
         local label = tab_label(tabpages[tabnr], tabnr)
         -- Mark tabs that have their own working directory (differing from the
-        -- global cwd).
+        -- global cwd). The tabline is a statusline-format string, so a literal
+        -- "%" must be escaped as "%%"; a bare "%" would be parsed as a
+        -- statusline item, rendering nothing while still consuming width.
         local tcwd = vim.fs.normalize(vim.fn.getcwd(-1, tabnr))
         if tcwd ~= global_cwd then
-            label = label .. "%"
+            label = label .. "%%"
         end
         tabs[tabnr] = {
             label = label,

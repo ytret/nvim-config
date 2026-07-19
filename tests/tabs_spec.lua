@@ -205,10 +205,15 @@ describe("tabs", function()
             vim.cmd("tcd /")
 
             -- Parse each tab's label: strip statusline control sequences
-            -- (highlights, click handlers), then capture the text after the
-            -- "<nr> " prefix.
+            -- (highlight groups and click handlers), collapse the escaped
+            -- literal "%%" to "%", then capture the text after the "<nr> "
+            -- prefix.
             local function tab_labels()
-                local clean = tabs.tabline():gsub("%%#.-#", ""):gsub("%%%d*T", "")
+                local clean = tabs.tabline()
+                    :gsub("%%#.-#", "")   -- highlight groups
+                    :gsub("%%%d+T", "")   -- click-handler start
+                    :gsub("%%T", "")      -- click-handler end
+                    :gsub("%%%%", "%%")   -- escaped literal '%' marker -> '%'
                 local labels = {}
                 for seg in clean:gmatch("[^|]+") do
                     local nr, label = seg:match("^%s*(%d+)%s+(.-)%s*$")
