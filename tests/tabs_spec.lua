@@ -136,6 +136,66 @@ describe("tabs", function()
         end)
     end)
 
+    describe("TabNew cwd behavior", function()
+        local saved_dir
+
+        before_each(function()
+            saved_dir = vim.fn.getcwd()
+        end)
+
+        after_each(function()
+            if saved_dir then
+                vim.fn.chdir(saved_dir)
+            end
+        end)
+
+        it("new tab inherits global cwd, not parent tab's :tcd", function()
+            -- Use /usr (not a symlink on macOS) so getcwd() returns a
+            -- predictable value.
+            vim.cmd("cd /usr")
+            local global_after_cd = vim.fn.getcwd()
+
+            -- Create a second tab and go back to the first, so that :tcd
+            -- applies tab-locally (with a single tab it elevates to global).
+            -- NOTE: getcwd(-1) is not a reliable oracle for the global cwd
+            -- once :tcd is in play (it can return the tab-local value), so
+            -- only the effective cwd getcwd() is asserted below.
+            vim.cmd("tabnew")
+            vim.cmd("tabprev")
+
+            -- Now set a tab-local directory that differs from global.
+            vim.cmd("tcd /")
+            assert.are.equal("/", vim.fn.getcwd())
+
+            -- Open yet another new tab; it lands in the new tab.
+            vim.cmd("tabnew")
+
+            -- The new tab should use the global cwd, not the parent tab's :tcd.
+            assert.are.equal(global_after_cd, vim.fn.getcwd())
+        end)
+
+        it("new tab in open_in_picked_tab inherits global cwd", function()
+            local saved_prompt = tabprompt.prompt_for_tab
+            tabprompt.prompt_for_tab = function() return { new = "end" } end
+
+            vim.cmd("cd /usr")
+            local global_after_cd = vim.fn.getcwd()
+
+            -- Second tab so :tcd is genuinely tab-local.
+            vim.cmd("tabnew")
+            vim.cmd("tabprev")
+
+            vim.cmd("tcd /")
+            assert.are.equal("/", vim.fn.getcwd())
+
+            tabs.open_in_picked_tab(function() end)
+
+            assert.are.equal(global_after_cd, vim.fn.getcwd())
+
+            tabprompt.prompt_for_tab = saved_prompt
+        end)
+    end)
+
     describe("tabline()", function()
         it("shows the buffer name for a single window", function()
             local buf = vim.api.nvim_create_buf(true, false)
