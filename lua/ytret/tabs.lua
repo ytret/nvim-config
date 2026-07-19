@@ -6,6 +6,12 @@ local tabprompt = require("ytret.tabprompt")
 -- :tcd has been used in any tab (it can return the tab-local value).
 local global_cwd = vim.fn.getcwd()
 
+-- Exposed read-only so tests can assert against the tracked global cwd
+-- without relying on the unreliable getcwd(-1).
+function M.get_global_cwd()
+    return global_cwd
+end
+
 vim.api.nvim_create_autocmd("DirChanged", {
     pattern = "global",
     callback = function(args)
@@ -411,6 +417,12 @@ local function tabline()
     local tabs = {}
     for tabnr = 1, total do
         local label = tab_label(tabpages[tabnr], tabnr)
+        -- Mark tabs that have their own working directory (differing from the
+        -- global cwd).
+        local tcwd = vim.fs.normalize(vim.fn.getcwd(-1, tabnr))
+        if tcwd ~= global_cwd then
+            label = label .. "%"
+        end
         tabs[tabnr] = {
             label = label,
             w = 1 + #tostring(tabnr) + 1 + #label + 1,
@@ -454,10 +466,40 @@ local function tabline()
     return table.concat(parts)
 end
 
+--- Truncate a path to at most `max` characters, eliding the head with "...".
+---@param path string
+---@param max integer
+---@return string
+function M.truncate_path(path, max)
+    if #path <= max then
+        return path
+    end
+    return "..." .. path:sub(#path - (max - 3) + 1)
+end
+
+--- Tab-local working directory segment for the statusline. Always shown for
+--- the current tab (even when it equals the global cwd), truncated to `max`
+--- characters and marked with a trailing "%" when it differs from global.
+---@param max integer|nil
+---@return string
+function M.twd_statusline(max)
+    max = max or 30
+    local cwd = vim.fs.normalize(vim.fn.getcwd())
+    local s = M.truncate_path(cwd, max)
+    if cwd ~= global_cwd then
+        s = s .. "%"
+    end
+    return s
+end
+
 M.open_in_picked_tab = open_in_picked_tab
 M._scrolled_range = _scrolled_range
 M.tabline = tabline
 
 vim.o.tabline = "%!v:lua.require'ytret.tabs'.tabline()"
+
+-- Statusline: buffer info on the left, the tab-local working directory and
+-- the default ruler info on the right.
+vim.o.statusline = "%f %h%m%r%=%{v:lua.require'ytret.tabs'.twd_statusline(30)}  %l:%c %p%%"
 
 return M
