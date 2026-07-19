@@ -194,6 +194,60 @@ describe("tabs", function()
 
             tabprompt.prompt_for_tab = saved_prompt
         end)
+
+        it("appends '%' to tabs whose cwd differs from the global cwd", function()
+            vim.cmd("cd /usr")
+            local global_after_cd = vim.fn.getcwd()
+            assert.are.equal(global_after_cd, tabs.get_global_cwd())
+
+            -- Tab 2 gets its own working directory; tab 1 stays on global.
+            vim.cmd("tabnew")
+            vim.cmd("tcd /")
+
+            -- Parse each tab's label: strip statusline control sequences
+            -- (highlights, click handlers), then capture the text after the
+            -- "<nr> " prefix.
+            local function tab_labels()
+                local clean = tabs.tabline():gsub("%%#.-#", ""):gsub("%%%d*T", "")
+                local labels = {}
+                for seg in clean:gmatch("[^|]+") do
+                    local nr, label = seg:match("^%s*(%d+)%s+(.-)%s*$")
+                    if nr then
+                        labels[tonumber(nr)] = label
+                    end
+                end
+                return labels
+            end
+
+            local labels = tab_labels()
+            -- Tab 2 (with :tcd) shows a trailing '%'; tab 1 does not.
+            assert.are.equal("[No Name]", labels[1])
+            assert.are.equal("[No Name]%", labels[2])
+        end)
+
+        it("twd_statusline shows the cwd, '%'-marked only when it differs", function()
+            vim.cmd("cd /usr")
+
+            -- No :tcd here, so the cwd equals the global cwd: no '%'.
+            local same = tabs.twd_statusline(30)
+            assert.are.equal("/usr", same)
+
+            -- Give the current tab its own working directory.
+            vim.cmd("tabnew")
+            vim.cmd("tcd /")
+            local diff = tabs.twd_statusline(30)
+            assert.are.equal("/%", diff)
+        end)
+
+        it("truncate_path elides the head of long paths", function()
+            assert.are.equal("short", tabs.truncate_path("short", 30))
+            local long = "/a/very/long/path/that/exceeds"
+            local out = tabs.truncate_path(long, 15)
+            assert.are.equal(15, #out)
+            assert.are.equal("...", out:sub(1, 3))
+            assert.truthy(long:find(out:sub(4), 1, true),
+                "Expected truncated tail to be a suffix of the original, got: " .. out)
+        end)
     end)
 
     describe("tabline()", function()
