@@ -61,12 +61,26 @@ local function open_current_buffer_in_new_tab(before)
     local view = vim.fn.winsaveview()
     local bufname = vim.api.nvim_buf_get_name(0)
     local has_file = bufname ~= ""
+    -- Save the source tab's effective cwd so we can restore it in the clone.
+    -- The TabNew autocmd resets new tabs to the global cwd, which would
+    -- otherwise lose a tab-local :tcd.
+    local source_cwd = vim.fs.normalize(vim.fn.getcwd())
 
     if has_file then
-        vim.cmd.tabnew("%")
+        -- Open by absolute path so the buffer resolves identically regardless
+        -- of the new tab's working directory. Using "%" would re-resolve the
+        -- filename against the new tab's cwd and can create a duplicate buffer.
+        local abs_bufname = vim.fn.fnamemodify(bufname, ":p")
+        vim.cmd("tabnew " .. vim.fn.fnameescape(abs_bufname))
         vim.fn.winrestview(view)
     else
         vim.cmd.tabnew()
+    end
+
+    -- Restore the source tab's working directory in the cloned tab.
+    local new_cwd = vim.fs.normalize(vim.fn.getcwd())
+    if new_cwd ~= source_cwd then
+        vim.cmd("tcd " .. vim.fn.fnameescape(source_cwd))
     end
 
     if cur then
@@ -495,6 +509,7 @@ function M.twd_statusline(max)
 end
 
 M.open_in_picked_tab = open_in_picked_tab
+M._open_current_buffer_in_new_tab = open_current_buffer_in_new_tab
 M._scrolled_range = _scrolled_range
 M.tabline = tabline
 
