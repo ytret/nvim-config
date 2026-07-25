@@ -244,6 +244,51 @@ describe("tabs", function()
             assert.are.equal("/%", diff)
         end)
 
+        it("cloning a tab preserves its tab-local cwd and buffer identity", function()
+            -- Create a real file in a temporary directory.  We use a real file
+            -- because the bug only shows up when tabnew re-resolves a relative
+            -- buffer name against the new tab's (global) cwd.
+            local tmpfile = vim.fn.tempname()
+            local tmpdir = vim.fn.fnamemodify(tmpfile, ":h")
+            local relpath = "tab_clone_relpath"
+            vim.fn.writefile({ "clone test" }, tmpdir .. "/" .. relpath)
+
+            -- Global cwd becomes tmpdir; open the file by relative name.
+            vim.cmd("cd " .. vim.fn.fnameescape(tmpdir))
+            vim.cmd("edit " .. vim.fn.fnameescape(relpath))
+            local source_buf = vim.api.nvim_get_current_buf()
+            -- Use whatever absolute path Neovim resolved the buffer to (e.g.
+            -- /var -> /private/var) so our assertions are not brittle to symlinks.
+            local abspath = vim.api.nvim_buf_get_name(0)
+
+            -- Need a second tab so the subsequent :tcd is truly tab-local.
+            vim.cmd("tabnew")
+            vim.cmd("tabprev")
+
+            -- Set a tab-local directory that differs from global cwd.
+            vim.cmd("tcd /")
+            assert.are.equal("/", vim.fn.getcwd())
+            -- Buffer name stays absolute even after :tcd.
+            assert.are.equal(abspath, vim.api.nvim_buf_get_name(0))
+
+            -- Clone the current tab (the action bound to <leader>tt).
+            tabs._open_current_buffer_in_new_tab(false)
+
+            -- Cleanup the temporary file regardless of assertions.
+            pcall(os.remove, abspath)
+
+            -- We should be in the newly created tab.
+            assert.are.equal(3, vim.fn.tabpagenr("$"))
+
+            -- The clone must keep the source tab's tab-local working directory.
+            assert.are.equal("/", vim.fn.getcwd())
+
+            -- The clone must reuse the original buffer, not create a duplicate
+            -- resolved against the global cwd.
+            assert.are.equal(source_buf, vim.api.nvim_get_current_buf())
+            assert.are.equal(abspath, vim.api.nvim_buf_get_name(0))
+        end)
+
         it("truncate_path elides the head of long paths", function()
             assert.are.equal("short", tabs.truncate_path("short", 30))
             local long = "/a/very/long/path/that/exceeds"
