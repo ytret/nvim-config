@@ -20,7 +20,7 @@ Personal Neovim config (Lua), managed with **lazy.nvim**, tests run with
 | `lua/ytret/tabs.lua` | **Custom tab handling**: keymaps, tab prompt, custom `tabline()`, statusline, and the tab-local cwd logic (see below). |
 | `lua/ytret/tabprompt.lua` | Interactive tab-number picker used by `tabs.lua`. |
 | `lua/ytret/path.lua` | Path helpers (`bufadd_prefer_rel`, etc.). |
-| `lua/ytret/fzf-setup.lua` | fzf-lua config + custom actions. |
+| `lua/ytret/fzf-setup.lua` | fzf-lua config + custom actions (picked-window/tab open, files↔live_grep composition). |
 | `after/plugin/*.lua` | Plugin setup that runs after plugins load (lsp, fzf, treesitter, nvim-tree, conform, etc.). |
 | `plugin/*.lua` | `autotheme.lua` (theme switching), `lastpos.lua` (restore cursor pos). |
 | `plugins/yt-window-picker/` | Local plugin (window picker), on `package.path` via lazy + tests. |
@@ -84,6 +84,31 @@ Current behavior:
   30 chars (head-elided `...`), suffixed with `%` when it differs from global.
 - **Tabline**: each tab whose cwd differs from global gets a `%` appended to its
   label.
+
+## fzf-lua: composing pickers (files → live_grep and back)
+
+`fzf-setup.lua` has a custom `ctrl-g` action that launches `live_grep` scoped to
+files selected in the `files` picker. It also preserves TUI state (fullscreen,
+preview position/size/hidden) across the transition. Several non-obvious
+details:
+
+- **The FzfWin singleton is destroyed when the action opens a new picker.**
+  To carry TUI state over, siphon it from `fzf_win.__SELF()` **before** the
+  action returns, then inject it into the new picker's `winopts`.
+- **Use `normalize_preview_layout()` to get the effective preview state.**
+  `_preview_pos_force` is nil unless the user manually rotated with F4/F5.
+  `normalize_preview_layout()` returns `{ pos, size, str }` — capture all three.
+- **Rebuilding preview opts correctly**: `preview.layout` expects
+  `"horizontal"`/`"vertical"`/`"flex"`, not raw position strings. The
+  position:size goes in `preview.horizontal` or `preview.vertical`, e.g.
+  `"up:60%"`. The `size` from `normalize_preview_layout()` is a fraction
+  (0–1), so multiply by 100 for the percentage string.
+- **Title flag accumulation bug**: `set_title_flags` mutates `winopts.title`
+  from a string into a table. Re-opening a picker with the same opts appends
+  duplicate flag entries (`"Files  h  h"`). After deep-copying opts, reset
+  `winopts.title` to a plain string.
+- **`apply_winopts` must write falsy values too**, not just truthy ones, or
+  toggling fullscreen/hidden *off* in grep won't carry back to files.
 
 ## Conventions
 
