@@ -4,10 +4,11 @@
 -- filesystem tree when using the current configuration (lua/ytret/neo-tree.lua).
 --
 -- ── Navigation ──────────────────────────────────────────────────────────
--- <cr>               Open file/directory (expand/collapse for dirs)
--- <2-LeftMouse>      Open file/directory (mouse double-click)
+-- <cr>               Open file (with A/B/C window picker if multiple windows)
+--                    On directories: expand/collapse
+-- <2-LeftMouse>      Open file/directory (no window picker)
 -- <space>            Toggle directory open/closed
--- <C-t>              Open file in picked tab (same as old nvim-tree <C-t>)
+-- <C-t>              Open file in picked tab (your custom tab picker)
 -- <bs>               Go up to parent directory
 -- .                   Set current directory as tree root
 -- <esc>               Cancel / close floating preview
@@ -17,7 +18,7 @@
 -- S                   Open file in horizontal split
 -- s                   Open file in vertical split
 -- t                   Open file in new tab
--- w                   Open file with window picker
+-- w                   Open file with window picker (always shows A/B/C)
 --
 -- ── Fuzzy finding & filtering ───────────────────────────────────────────
 -- /                   Fuzzy find files (live filter)

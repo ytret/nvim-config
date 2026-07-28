@@ -1,6 +1,59 @@
 local M = {}
 
 local tabs = require("ytret.tabs")
+local window_picker = require("yt-window-picker")
+
+-- Count normal (non-floating) windows in the current tabpage.
+local function count_normal_windows()
+    local count = 0
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        if vim.api.nvim_win_get_config(win).relative == "" then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+-- Open a file node, using the window picker when there are multiple windows.
+-- Mirrors nvim-tree's built-in behavior: <cr> on a file picks A/B/C if needed.
+local function open_with_possible_picker(state)
+    local node = state.tree:get_node()
+    if not node or node.type ~= "file" then
+        return
+    end
+    local path = node:get_id()
+    if not path then
+        return
+    end
+
+    if count_normal_windows() <= 1 then
+        vim.cmd.edit(vim.fn.fnameescape(path))
+    else
+        local win = window_picker.pick_window()
+        if win then
+            vim.api.nvim_set_current_win(win)
+            vim.cmd.edit(vim.fn.fnameescape(path))
+        end
+    end
+end
+
+-- Always use the window picker when opening a file.
+local function open_with_picker(state)
+    local node = state.tree:get_node()
+    if not node or node.type ~= "file" then
+        return
+    end
+    local path = node:get_id()
+    if not path then
+        return
+    end
+
+    local win = window_picker.pick_window()
+    if win then
+        vim.api.nvim_set_current_win(win)
+        vim.cmd.edit(vim.fn.fnameescape(path))
+    end
+end
 
 ---@param state neotree.State
 local function open_in_picked_tab(state)
@@ -89,7 +142,7 @@ function M.setup()
                     ["<C-;>"] = "clear_selection",
                     ["<space>"] = { "toggle_node", nowait = false },
                     ["<2-LeftMouse>"] = "open",
-                    ["<cr>"] = "open",
+                    ["<cr>"] = open_with_possible_picker,
                     ["<esc>"] = "cancel",
                     ["P"] = { "toggle_preview", config = { use_float = true } },
                     ["<C-f>"] = { "scroll_preview", config = { direction = -10 } },
@@ -98,7 +151,7 @@ function M.setup()
                     ["S"] = "open_split",
                     ["s"] = "open_vsplit",
                     ["t"] = "open_tabnew",
-                    ["w"] = "open_with_window_picker",
+                    ["w"] = open_with_picker,
                     ["C"] = "close_node",
                     ["z"] = "close_all_nodes",
                     ["R"] = "refresh",
