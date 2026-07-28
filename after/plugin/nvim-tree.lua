@@ -1,3 +1,9 @@
+-- This file is inactive while neo-tree is configured in lazy.lua.
+-- To switch back to nvim-tree: replace neo-tree with nvim-tree in lazy.lua.
+if not pcall(require, "nvim-tree") then
+    return
+end
+
 local DirectoryNode = require("nvim-tree.node.directory")
 local tabs = require("ytret.tabs")
 

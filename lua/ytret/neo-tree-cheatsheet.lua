@@ -1,0 +1,77 @@
+-- neo-tree key mapping cheatsheet
+--
+-- This file is only documentation. It lists every key available in the
+-- filesystem tree when using the current configuration (lua/ytret/neo-tree.lua).
+--
+-- ── Navigation ──────────────────────────────────────────────────────────
+-- <cr>               Open file/directory (expand/collapse for dirs)
+-- <2-LeftMouse>      Open file/directory (mouse double-click)
+-- <space>            Toggle directory open/closed
+-- <C-t>              Open file in picked tab (same as old nvim-tree <C-t>)
+-- <bs>               Go up to parent directory
+-- .                   Set current directory as tree root
+-- <esc>               Cancel / close floating preview
+-- q                   Close neo-tree window
+--
+-- ── Opening files ───────────────────────────────────────────────────────
+-- S                   Open file in horizontal split
+-- s                   Open file in vertical split
+-- t                   Open file in new tab
+-- w                   Open file with window picker
+--
+-- ── Fuzzy finding & filtering ───────────────────────────────────────────
+-- /                   Fuzzy find files (live filter)
+-- f                   Filter on submit (type then <cr>)
+-- D                   Fuzzy find directories only
+-- #                   Fuzzy sorter (fzy algorithm, reorder tree)
+-- <C-x>               Clear active filter
+-- H                   Toggle hidden files visibility
+--
+-- ── File operations ─────────────────────────────────────────────────────
+-- a                   Add file (create new file)
+-- A                   Add directory (create new directory)
+-- d                   Delete file/directory
+-- T                   Trash file/directory
+-- u                   Undo (supports trash, not delete)
+-- U                   Restore from trash
+-- r                   Rename file/directory
+-- b                   Rename basename only (without extension)
+-- c                   Copy to... (text input for destination)
+-- m                   Move to... (text input for destination)
+-- y                   Yank (copy to internal clipboard)
+-- x                   Cut (to internal clipboard)
+-- p                   Paste from clipboard
+-- <C-r>               Clear clipboard
+--
+-- ── Expand / collapse ───────────────────────────────────────────────────
+-- C                   Close directory (collapse)
+-- z                   Close all directories (collapse everything)
+--
+-- ── Git navigation ──────────────────────────────────────────────────────
+-- [g                  Previous git changed file
+-- ]g                  Next git changed file
+--
+-- ── Preview ─────────────────────────────────────────────────────────────
+-- P                   Toggle file preview (floating popup)
+-- <C-f>               Scroll preview down 10 lines
+-- <C-b>               Scroll preview up 10 lines
+-- l                   Focus preview window (jump to it)
+--
+-- ── View & ordering ─────────────────────────────────────────────────────
+-- R                   Refresh tree
+-- e                   Toggle auto-expand width
+-- i                   Show file details (stat info)
+-- ?                   Show key mapping help
+-- <Tab>               Select node (multi-select)
+-- <C-;>               Clear selection
+-- o {c,d,g,m,n,s,t}   Order by: created / diagnostics / git / modified /
+--                               name / size / type
+--
+-- ── Sources ─────────────────────────────────────────────────────────────
+-- <                   Previous source
+-- >                   Next source
+-- (only "filesystem" is enabled currently, so these are no-ops)
+--
+-- ── Global ──────────────────────────────────────────────────────────────
+-- <leader>pv          Toggle neo-tree float (from any buffer)
+-- :Neotree filesystem toggle float   -- same, as an Ex command
