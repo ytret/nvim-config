@@ -16,6 +16,7 @@ end
 
 -- Open a file node, using the window picker when there are multiple windows.
 -- Mirrors nvim-tree's built-in behavior: <cr> on a file picks A/B/C if needed.
+-- Closes the floating neo-tree window during the pick so it doesn't obstruct labels.
 local function open_with_possible_picker(state)
     local node = state.tree:get_node()
     if not node or node.type ~= "file" then
@@ -29,15 +30,19 @@ local function open_with_possible_picker(state)
     if count_normal_windows() <= 1 then
         vim.cmd.edit(vim.fn.fnameescape(path))
     else
+        vim.cmd("Neotree close")
         local win = window_picker.pick_window()
         if win then
             vim.api.nvim_set_current_win(win)
             vim.cmd.edit(vim.fn.fnameescape(path))
+        else
+            vim.cmd("Neotree filesystem toggle float")
         end
     end
 end
 
 -- Always use the window picker when opening a file.
+-- Closes the floating neo-tree window during the pick so it doesn't obstruct labels.
 local function open_with_picker(state)
     local node = state.tree:get_node()
     if not node or node.type ~= "file" then
@@ -48,10 +53,13 @@ local function open_with_picker(state)
         return
     end
 
+    vim.cmd("Neotree close")
     local win = window_picker.pick_window()
     if win then
         vim.api.nvim_set_current_win(win)
         vim.cmd.edit(vim.fn.fnameescape(path))
+    else
+        vim.cmd("Neotree filesystem toggle float")
     end
 end
 
