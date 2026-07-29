@@ -84,9 +84,7 @@ local function open_in_picked_tab(state)
         return
     end
 
-    tabs.open_in_picked_tab(function()
-        vim.cmd.edit(vim.fn.fnameescape(path))
-    end)
+    tabs.open_in_picked_tab(function() vim.cmd.edit(vim.fn.fnameescape(path)) end)
 end
 
 function M.setup()
@@ -143,9 +141,7 @@ function M.setup()
             use_libuv_file_watcher = false,
             window = {
                 mappings = {
-                    ["<C-t>"] = function(state)
-                        open_in_picked_tab(state)
-                    end,
+                    ["<C-t>"] = function(state) open_in_picked_tab(state) end,
                     ["<Tab>"] = "select",
                     ["<C-;>"] = "clear_selection",
                     ["<space>"] = { "toggle_node", nowait = false },
@@ -193,7 +189,11 @@ function M.setup()
                     ["]g"] = "next_git_modified",
                     ["i"] = "show_file_details",
                     ["b"] = "rename_basename",
-                    ["o"] = { "show_help", nowait = false, config = { title = "Order by", prefix_key = "o" } },
+                    ["o"] = {
+                        "show_help",
+                        nowait = false,
+                        config = { title = "Order by", prefix_key = "o" },
+                    },
                     ["oc"] = { "order_by_created", nowait = false },
                     ["od"] = { "order_by_diagnostics", nowait = false },
                     ["og"] = { "order_by_git_status", nowait = false },
@@ -255,3 +255,4 @@ function M.setup()
 end
 
 return M
+

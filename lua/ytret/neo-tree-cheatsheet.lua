@@ -76,3 +76,4 @@
 -- ── Global ──────────────────────────────────────────────────────────────
 -- <leader>pv          Toggle neo-tree float (from any buffer)
 -- :Neotree filesystem toggle float   -- same, as an Ex command
+
