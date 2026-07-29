@@ -21,7 +21,8 @@ Personal Neovim config (Lua), managed with **lazy.nvim**, tests run with
 | `lua/ytret/tabprompt.lua` | Interactive tab-number picker used by `tabs.lua`. |
 | `lua/ytret/path.lua` | Path helpers (`bufadd_prefer_rel`, etc.). |
 | `lua/ytret/fzf-setup.lua` | fzf-lua config + custom actions (picked-window/tab open, files↔live_grep composition). |
-| `after/plugin/*.lua` | Plugin setup that runs after plugins load (lsp, fzf, treesitter, nvim-tree, conform, etc.). |
+| `lua/ytret/neo-tree.lua` | neo-tree config: floating window, per-tab state, custom mappings. |
+| `after/plugin/*.lua` | Plugin setup that runs after plugins load (lsp, fzf, treesitter, neo-tree, conform, etc.). |
 | `plugin/*.lua` | `autotheme.lua` (theme switching), `lastpos.lua` (restore cursor pos). |
 | `plugins/yt-window-picker/` | Local plugin (window picker), on `package.path` via lazy + tests. |
 | `ftplugin/` | `go.lua`, `info.vim`. |

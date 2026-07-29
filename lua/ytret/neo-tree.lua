@@ -1,67 +1,6 @@
 local M = {}
 
 local tabs = require("ytret.tabs")
-local window_picker = require("yt-window-picker")
-
--- Count normal (non-floating) windows in the current tabpage.
-local function count_normal_windows()
-    local count = 0
-    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-        if vim.api.nvim_win_get_config(win).relative == "" then
-            count = count + 1
-        end
-    end
-    return count
-end
-
--- Open a file node, using the window picker when there are multiple windows.
--- Mirrors nvim-tree's built-in behavior: <cr> on a file picks A/B/C if needed.
--- Closes the floating neo-tree window during the pick so it doesn't obstruct labels.
-local function open_with_possible_picker(state)
-    local node = state.tree:get_node()
-    if not node or node.type ~= "file" then
-        return
-    end
-    local path = node:get_id()
-    if not path then
-        return
-    end
-
-    if count_normal_windows() <= 1 then
-        vim.cmd.edit(vim.fn.fnameescape(path))
-    else
-        vim.cmd("Neotree close")
-        local win = window_picker.pick_window()
-        if win then
-            vim.api.nvim_set_current_win(win)
-            vim.cmd.edit(vim.fn.fnameescape(path))
-        else
-            vim.cmd("Neotree filesystem toggle float")
-        end
-    end
-end
-
--- Always use the window picker when opening a file.
--- Closes the floating neo-tree window during the pick so it doesn't obstruct labels.
-local function open_with_picker(state)
-    local node = state.tree:get_node()
-    if not node or node.type ~= "file" then
-        return
-    end
-    local path = node:get_id()
-    if not path then
-        return
-    end
-
-    vim.cmd("Neotree close")
-    local win = window_picker.pick_window()
-    if win then
-        vim.api.nvim_set_current_win(win)
-        vim.cmd.edit(vim.fn.fnameescape(path))
-    else
-        vim.cmd("Neotree filesystem toggle float")
-    end
-end
 
 ---@param state neotree.State
 local function open_in_picked_tab(state)
@@ -71,10 +10,8 @@ local function open_in_picked_tab(state)
         return
     end
 
-    -- Directories: toggle expand/collapse
+    -- Directories: Ctrl-T does nothing — use <cr> or <space> to expand
     if node.type == "directory" then
-        local cc = require("neo-tree.sources.common.commands")
-        cc.toggle_node(state, node)
         return
     end
 
@@ -101,7 +38,6 @@ function M.setup()
         popup_border_style = "rounded",
         sort_case_insensitive = true,
         use_popups_for_input = true,
-        -- use_default_mappings = false, -- we define mappings explicitly below
 
         window = {
             position = "float",
@@ -140,70 +76,11 @@ function M.setup()
             hijack_netrw_behavior = "open_default",
             use_libuv_file_watcher = false,
             window = {
-                --[[
                 mappings = {
-                    ["<C-t>"] = function(state) open_in_picked_tab(state) end,
-                    ["<Tab>"] = "select",
-                    ["<C-;>"] = "clear_selection",
-                    ["<space>"] = { "toggle_node", nowait = false },
-                    ["<2-LeftMouse>"] = "open",
-                    ["<cr>"] = open_with_possible_picker,
-                    ["<esc>"] = "cancel",
-                    ["P"] = { "toggle_preview", config = { use_float = true } },
-                    ["<C-f>"] = { "scroll_preview", config = { direction = -10 } },
-                    ["<C-b>"] = { "scroll_preview", config = { direction = 10 } },
-                    ["l"] = "focus_preview",
-                    ["S"] = "open_split",
-                    ["s"] = "open_vsplit",
-                    ["t"] = "open_tabnew",
-                    ["w"] = open_with_picker,
-                    ["C"] = "close_node",
-                    ["z"] = "close_all_nodes",
-                    ["R"] = "refresh",
-                    ["a"] = { "add", config = { show_path = "none" } },
-                    ["A"] = "add_directory",
-                    ["d"] = "delete",
-                    ["T"] = "trash",
-                    ["u"] = "undo",
-                    ["U"] = "restore_from_trash",
-                    ["r"] = "rename",
-                    ["y"] = "copy_to_clipboard",
-                    ["x"] = "cut_to_clipboard",
-                    ["p"] = "paste_from_clipboard",
-                    ["<C-r>"] = "clear_clipboard",
-                    ["c"] = "copy",
-                    ["m"] = "move",
-                    ["e"] = "toggle_auto_expand_width",
-                    ["q"] = "close_window",
-                    ["?"] = "show_help",
-                    ["<"] = "prev_source",
-                    [">"] = "next_source",
-                    ["H"] = "toggle_hidden",
-                    ["/"] = "fuzzy_finder",
-                    ["D"] = "fuzzy_finder_directory",
-                    ["#"] = "fuzzy_sorter",
-                    ["f"] = "filter_on_submit",
-                    ["<C-x>"] = "clear_filter",
-                    ["<bs>"] = "navigate_up",
-                    ["."] = "set_root",
-                    ["[g"] = "prev_git_modified",
-                    ["]g"] = "next_git_modified",
-                    ["i"] = "show_file_details",
-                    ["b"] = "rename_basename",
-                    ["o"] = {
-                        "show_help",
-                        nowait = false,
-                        config = { title = "Order by", prefix_key = "o" },
-                    },
-                    ["oc"] = { "order_by_created", nowait = false },
-                    ["od"] = { "order_by_diagnostics", nowait = false },
-                    ["og"] = { "order_by_git_status", nowait = false },
-                    ["om"] = { "order_by_modified", nowait = false },
-                    ["on"] = { "order_by_name", nowait = false },
-                    ["os"] = { "order_by_size", nowait = false },
-                    ["ot"] = { "order_by_type", nowait = false },
+                    ["<C-s>"] = "open_split",
+                    ["<C-v>"] = "open_vsplit",
+                    ["<C-t>"] = open_in_picked_tab,
                 },
-                --]]
             },
         },
 
@@ -257,4 +134,3 @@ function M.setup()
 end
 
 return M
-

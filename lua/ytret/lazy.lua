@@ -72,7 +72,7 @@ require("lazy").setup({
     { "hrsh7th/cmp-nvim-lua" },
     { "L3MON4D3/LuaSnip" },
 
-    -- Projects
+    -- File tree
     {
         "nvim-neo-tree/neo-tree.nvim",
         name = "neo-tree",
