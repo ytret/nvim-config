@@ -29,7 +29,12 @@ local function list_normal_windows()
 
     for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
         local config = vim.api.nvim_win_get_config(win)
-        if config.relative == "" and config.focusable and not config.hide and not config.external then
+        if
+            config.relative == ""
+            and config.focusable
+            and not config.hide
+            and not config.external
+        then
             table.insert(windows, win)
         end
     end
@@ -75,7 +80,8 @@ local function draw_labels(windows)
 
     for index, win in ipairs(windows) do
         local label = index_to_label(index)
-        local ok_statusline, statusline = pcall(vim.api.nvim_get_option_value, "statusline", { win = win })
+        local ok_statusline, statusline =
+            pcall(vim.api.nvim_get_option_value, "statusline", { win = win })
         local ok_winhl, winhl = pcall(vim.api.nvim_get_option_value, "winhl", { win = win })
 
         window_options[win] = {
@@ -85,7 +91,11 @@ local function draw_labels(windows)
 
         labels[label] = win
         vim.api.nvim_set_option_value("statusline", "%=" .. label .. "%=", { win = win })
-        vim.api.nvim_set_option_value("winhl", "StatusLine:ErrorMsg,StatusLineNC:ErrorMsg", { win = win })
+        vim.api.nvim_set_option_value(
+            "winhl",
+            "StatusLine:ErrorMsg,StatusLineNC:ErrorMsg",
+            { win = win }
+        )
     end
 
     fillchars.stl = original_stl
