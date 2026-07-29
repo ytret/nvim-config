@@ -101,7 +101,7 @@ function M.setup()
         popup_border_style = "rounded",
         sort_case_insensitive = true,
         use_popups_for_input = true,
-        use_default_mappings = false, -- we define mappings explicitly below
+        -- use_default_mappings = false, -- we define mappings explicitly below
 
         window = {
             position = "float",
@@ -140,6 +140,7 @@ function M.setup()
             hijack_netrw_behavior = "open_default",
             use_libuv_file_watcher = false,
             window = {
+                --[[
                 mappings = {
                     ["<C-t>"] = function(state) open_in_picked_tab(state) end,
                     ["<Tab>"] = "select",
@@ -202,6 +203,7 @@ function M.setup()
                     ["os"] = { "order_by_size", nowait = false },
                     ["ot"] = { "order_by_type", nowait = false },
                 },
+                --]]
             },
         },
 
