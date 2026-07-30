@@ -71,6 +71,13 @@ local function apply_theme_file()
             )
         )
         vim.cmd([[ match MyTrailingWhitespace /\s\+$/ ]])
+        vim.api.nvim_create_augroup("YtretTrailingWhitespace", { clear = true })
+        vim.api.nvim_create_autocmd({ "WinNew", "BufWinEnter" }, {
+            group = "YtretTrailingWhitespace",
+            callback = function()
+                vim.cmd([[ match MyTrailingWhitespace /\s\+$/ ]])
+            end,
+        })
     end
 end
 

@@ -10,6 +10,7 @@ describe("autotheme", function()
         for _, fn in ipairs(restore_fns) do
             pcall(fn)
         end
+        pcall(vim.api.nvim_del_augroup_by_name, "YtretTrailingWhitespace")
     end)
 
     local function mock_env(theme)
