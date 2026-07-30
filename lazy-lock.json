@@ -17,7 +17,7 @@
   "nerd-column.nvim": { "branch": "main", "commit": "d9211eed6b8788b753a7f9c60fc638a25bdbe15d" },
   "nvim-cmp": { "branch": "main", "commit": "2ffe79f1f021def8dd1fcd81deb16f1bb0d989f3" },
   "nvim-lspconfig": { "branch": "master", "commit": "b7b920947f21339ee41fbb38c79d6445e12900aa" },
-  "nvim-tree": { "branch": "master", "commit": "79c046b82b07e79817522e1228897d77931e9377" },
+  "nvim-tree": { "branch": "master", "commit": "1fc8bbfbaf3551e333ce1da4d94032cebcaaede5" },
   "nvim-treesitter-textobjects": { "branch": "main", "commit": "898ee307df58f854d11cd7edd06472574d48014e" },
   "plenary.nvim": { "branch": "master", "commit": "74b06c6c75e4eeb3108ec01852001636d85a932b" },
   "rose-pine": { "branch": "main", "commit": "ff483051a47e27d84bdef47703538df1ed9f4a47" },
