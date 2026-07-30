@@ -74,16 +74,11 @@ require("lazy").setup({
 
     -- File tree
     {
-        "nvim-neo-tree/neo-tree.nvim",
-        name = "neo-tree",
-        branch = "v3.x",
+        "nvim-tree/nvim-tree.lua",
+        name = "nvim-tree",
+        version = "*",
         lazy = false,
-        dependencies = {
-            "nvim-lua/plenary.nvim",
-            "MunifTanjim/nui.nvim",
-            "nvim-tree/nvim-web-devicons",
-        },
-        config = function() require("ytret.neo-tree").setup() end,
+        config = function() require("nvim-tree").setup({}) end,
     },
     {
         "ibhagwan/fzf-lua",
