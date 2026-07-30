@@ -68,12 +68,38 @@ require("nvim-tree").setup({
         local api = require("nvim-tree.api")
         api.map.on_attach.default(bufnr)
 
+        local function opts(desc)
+            return {
+                buffer = bufnr,
+                noremap = true,
+                silent = true,
+                nowait = true,
+                desc = "nvim-tree: " .. desc,
+            }
+        end
+
         vim.keymap.set("n", "<C-t>", function()
             local node = api.tree.get_node_under_cursor()
             if node then
                 open_in_picked_tab(node)
             end
-        end, { buffer = bufnr, desc = "Open file in picked tab" })
+        end, opts("Open file in picked tab"))
+
+        vim.keymap.set("n", "<BS>", api.tree.focus_source_win, opts("Focus Source Window"))
+
+        vim.keymap.set(
+            "n",
+            "tg",
+            function() api.tree.change_root(vim.fn.getcwd(-1, -1)) end,
+            opts("Root at global working dir")
+        )
+
+        vim.keymap.set(
+            "n",
+            "tl",
+            function() api.tree.change_root(vim.fn.getcwd(-1, 0)) end,
+            opts("Root at tab-local working dir")
+        )
     end,
 })
 
