@@ -74,7 +74,7 @@ require("lazy").setup({
 
     -- File tree
     {
-        "nvim-tree/nvim-tree.lua",
+        "ytret/nvim-tree.lua",
         name = "nvim-tree",
         version = "*",
         lazy = false,
