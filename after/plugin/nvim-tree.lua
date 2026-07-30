@@ -19,9 +19,7 @@ local function open_in_picked_tab(node)
         return
     end
 
-    tabs.open_in_picked_tab(function()
-        vim.cmd.edit(vim.fn.fnameescape(path))
-    end)
+    tabs.open_in_picked_tab(function() vim.cmd.edit(vim.fn.fnameescape(path)) end)
 end
 
 local function calc_size_pos()
