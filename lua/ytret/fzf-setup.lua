@@ -154,6 +154,14 @@ end
 function M.setup(opts)
     opts = opts or {}
     opts.fzf_colors = true
+    -- Fullscreen windows with the preview taking exactly half the width
+    opts.winopts = vim.tbl_deep_extend("force", opts.winopts or {}, {
+        fullscreen = true,
+        preview = {
+            layout = "horizontal",
+            horizontal = "right:50%",
+        },
+    })
     opts.files = vim.tbl_deep_extend("force", opts.files or {}, {
         fzf_opts = {
             ["--history"] = vim.fn.stdpath("data") .. "/fzf-lua-files-history",
