@@ -73,6 +73,9 @@ local function apply_theme_file()
         local function apply_trailing_whitespace_match()
             if vim.bo.buftype ~= "terminal" then
                 vim.cmd([[ match MyTrailingWhitespace /\s\+$/ ]])
+            else
+                -- Clear match in terminal buffers (e.g. lazygit)
+                vim.cmd([[ match none ]])
             end
         end
         apply_trailing_whitespace_match()
@@ -86,7 +89,7 @@ local function apply_theme_file()
         vim.api.nvim_create_autocmd("TermOpen", {
             group = "YtretTrailingWhitespace",
             callback = function()
-                vim.cmd([[ match MyTrailingWhitespace /\%$/ ]])
+                vim.cmd([[ match none ]])
             end,
         })
     end
