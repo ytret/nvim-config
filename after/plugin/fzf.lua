@@ -6,6 +6,14 @@ vim.keymap.set("n", "<C-p>", fzf.files, {})
 vim.keymap.set("n", "<leader>ps", fzf.live_grep, {})
 vim.keymap.set("n", "<leader>pr", fzf.resume, {})
 
+-- Current-file scope: live grep the opened file, results in line-number order
+vim.keymap.set(
+    "n",
+    "<leader>pf",
+    function() fzf.lgrep_curbuf({ fzf_opts = { ["--no-sort"] = true } }) end,
+    { desc = "Live grep current file (sorted by line)" }
+)
+
 -- LSP: project-scope
 vim.keymap.set("n", "<M-f>", fzf.lsp_finder)
 vim.keymap.set("n", "<leader>sw", fzf.lsp_live_workspace_symbols, {})
