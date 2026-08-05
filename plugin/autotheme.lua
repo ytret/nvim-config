@@ -70,12 +70,23 @@ local function apply_theme_file()
                 space_hl_guibg
             )
         )
-        vim.cmd([[ match MyTrailingWhitespace /\s\+$/ ]])
+        local function apply_trailing_whitespace_match()
+            if vim.bo.buftype ~= "terminal" then
+                vim.cmd([[ match MyTrailingWhitespace /\s\+$/ ]])
+            end
+        end
+        apply_trailing_whitespace_match()
         vim.api.nvim_create_augroup("YtretTrailingWhitespace", { clear = true })
         vim.api.nvim_create_autocmd({ "WinNew", "BufWinEnter" }, {
             group = "YtretTrailingWhitespace",
+            callback = apply_trailing_whitespace_match,
+        })
+        -- TermOpen fires after buftype is set to "terminal", so it reliably
+        -- clears the match that BufWinEnter may have applied too early.
+        vim.api.nvim_create_autocmd("TermOpen", {
+            group = "YtretTrailingWhitespace",
             callback = function()
-                vim.cmd([[ match MyTrailingWhitespace /\s\+$/ ]])
+                vim.cmd([[ match MyTrailingWhitespace /\%$/ ]])
             end,
         })
     end
