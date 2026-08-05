@@ -7,10 +7,21 @@ local mock_utils = {
     cwd = function() return "/tmp" end,
 }
 local mock_actions = {}
+-- top-level modules required by ytret.fzf-setup that are not on package.path
+-- in the test harness (they are only provided by lazy.nvim at runtime)
+local mock_fzf_lua = {
+    files = function() end,
+    live_grep = function() end,
+}
+local mock_win = {
+    __SELF = function() end,
+}
 
+package.loaded["fzf-lua"] = mock_fzf_lua
 package.loaded["fzf-lua.path"] = mock_path
 package.loaded["fzf-lua.utils"] = mock_utils
 package.loaded["fzf-lua.actions"] = mock_actions
+package.loaded["fzf-lua.win"] = mock_win
 package.loaded["ytret.fzf-setup"] = nil
 
 local fzf_setup = require("ytret.fzf-setup")
@@ -132,5 +143,25 @@ describe("has_real_target", function()
 
         assert.is_false(has_real_target({ "test" }, { cwd = tmpdir }))
         vim.fn.delete(tmpdir, "rf")
+    end)
+end)
+
+describe("setup winopts", function()
+    it("forces fullscreen windows", function()
+        local opts = fzf_setup.setup({})
+        assert.is_true(opts.winopts.fullscreen)
+    end)
+
+    it("puts the preview on the right at 50% of the width", function()
+        local opts = fzf_setup.setup({})
+        assert.equals("horizontal", opts.winopts.preview.layout)
+        assert.equals("right:50%", opts.winopts.preview.horizontal)
+    end)
+
+    it("preserves existing user winopts", function()
+        local opts = fzf_setup.setup({ winopts = { border = "none" } })
+        assert.equals("none", opts.winopts.border)
+        assert.is_true(opts.winopts.fullscreen)
+        assert.equals("right:50%", opts.winopts.preview.horizontal)
     end)
 end)
