@@ -89,7 +89,7 @@ require("nvim-tree").setup({
 
         vim.keymap.set(
             "n",
-            "tg",
+            "tG",
             function() api.tree.change_root(vim.fn.getcwd(-1, -1)) end,
             opts("Root at global working dir")
         )
@@ -100,6 +100,31 @@ require("nvim-tree").setup({
             function() api.tree.change_root(vim.fn.getcwd(-1, 0)) end,
             opts("Root at tab-local working dir")
         )
+
+        local cwd_group_symbols = {
+            { key = "A", greek = "α" },
+            { key = "B", greek = "β" },
+            { key = "G", greek = "γ" },
+            { key = "D", greek = "δ" },
+            { key = "E", greek = "ε" },
+            { key = "Z", greek = "ζ" },
+            { key = "H", greek = "η" },
+            { key = "T", greek = "θ" },
+            { key = "I", greek = "ι" },
+            { key = "K", greek = "κ" },
+        }
+
+        for _, group in ipairs(cwd_group_symbols) do
+            local lhs = "t" .. group.key:lower()
+            vim.keymap.set("n", lhs, function()
+                local cwd = tabs.cwd_for_group_key(group.key)
+                if cwd then
+                    api.tree.change_root(cwd)
+                else
+                    vim.notify("Tab cwd group " .. group.greek .. " does not exist", vim.log.levels.INFO)
+                end
+            end, opts("Root at tab cwd group " .. group.greek))
+        end
     end,
 })
 

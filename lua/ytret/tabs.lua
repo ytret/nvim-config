@@ -7,6 +7,7 @@ local tabprompt = require("ytret.tabprompt")
 local global_cwd = vim.fs.normalize(vim.fn.getcwd())
 
 local cwd_groups = {}
+local cwd_groups_by_index = {}
 local next_cwd_group = 1
 
 local cwd_group_symbols = {
@@ -38,13 +39,30 @@ local function register_cwd_group(cwd)
         index = index,
     }
     cwd_groups[cwd] = group
+    if index <= #cwd_group_symbols then
+        cwd_groups_by_index[index] = group
+    end
     next_cwd_group = next_cwd_group + 1
     return group
 end
 
+---@param key string
+---@return string|nil cwd
+function M.cwd_for_group_key(key)
+    for index, symbol in ipairs(cwd_group_symbols) do
+        if symbol.key == key then
+            local group = cwd_groups_by_index[index]
+            return group and group.cwd or nil
+        end
+    end
+    return nil
+end
+
 -- Exposed read-only so tests can assert against the tracked global cwd
 -- without relying on the unreliable getcwd(-1).
-function M.get_global_cwd() return global_cwd end
+function M.get_global_cwd()
+    return global_cwd
+end
 
 vim.api.nvim_create_autocmd("DirChanged", {
     pattern = "global",
@@ -563,6 +581,7 @@ M.tabline = tabline
 
 function M._reset_cwd_groups()
     cwd_groups = {}
+    cwd_groups_by_index = {}
     next_cwd_group = 1
 end
 
