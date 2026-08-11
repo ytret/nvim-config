@@ -3,6 +3,7 @@ local tabs = require("ytret.tabs")
 
 describe("tabs", function()
     before_each(function()
+        tabs._reset_cwd_groups()
         while vim.fn.tabpagenr("$") > 1 do
             vim.cmd("tabclose 2")
         end
@@ -195,7 +196,7 @@ describe("tabs", function()
             tabprompt.prompt_for_tab = saved_prompt
         end)
 
-        it("appends '%' to tabs whose cwd differs from the global cwd", function()
+        it("appends a Greek marker to tabs whose cwd differs from the global cwd", function()
             vim.cmd("cd /usr")
             local global_after_cd = vim.fn.getcwd()
             assert.are.equal(global_after_cd, tabs.get_global_cwd())
@@ -225,9 +226,25 @@ describe("tabs", function()
             end
 
             local labels = tab_labels()
-            -- Tab 2 (with :tcd) shows a trailing '%'; tab 1 does not.
+            -- Tab 2 (with :tcd) shows a trailing marker; tab 1 does not.
             assert.are.equal("[No Name]", labels[1])
-            assert.are.equal("[No Name]%", labels[2])
+            assert.are.equal("[No Name]α", labels[2])
+        end)
+
+        it("looks up registered cwd groups by key", function()
+            vim.cmd("cd /usr")
+            assert.is_nil(tabs.cwd_for_group_key("A"))
+
+            vim.cmd("tabnew")
+            vim.cmd("tcd /")
+            assert.are.equal(vim.fs.normalize("/"), tabs.cwd_for_group_key("A"))
+
+            vim.cmd("tabnew")
+            vim.cmd("tcd /var")
+            local beta_cwd = vim.fs.normalize(vim.fn.getcwd())
+            assert.are.equal(vim.fs.normalize("/"), tabs.cwd_for_group_key("A"))
+            assert.are.equal(beta_cwd, tabs.cwd_for_group_key("B"))
+            assert.is_nil(tabs.cwd_for_group_key("K"))
         end)
 
         it("twd_statusline shows the cwd, '%'-marked only when it differs", function()
