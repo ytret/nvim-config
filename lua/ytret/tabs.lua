@@ -4,18 +4,60 @@ local tabprompt = require("ytret.tabprompt")
 
 -- Track the global cwd ourselves because getcwd(-1) is unreliable when
 -- :tcd has been used in any tab (it can return the tab-local value).
-local global_cwd = vim.fn.getcwd()
+local global_cwd = vim.fs.normalize(vim.fn.getcwd())
+
+local cwd_groups = {}
+local next_cwd_group = 1
+
+local cwd_group_symbols = {
+    { greek = "α", key = "A" },
+    { greek = "β", key = "B" },
+    { greek = "γ", key = "G" },
+    { greek = "δ", key = "D" },
+    { greek = "ε", key = "E" },
+    { greek = "ζ", key = "Z" },
+    { greek = "η", key = "H" },
+    { greek = "θ", key = "T" },
+    { greek = "ι", key = "I" },
+    { greek = "κ", key = "K" },
+}
+
+local function register_cwd_group(cwd)
+    cwd = vim.fs.normalize(cwd)
+    local existing = cwd_groups[cwd]
+    if existing then
+        return existing
+    end
+
+    local index = next_cwd_group
+    local symbol = cwd_group_symbols[math.min(index, #cwd_group_symbols)]
+    local group = {
+        cwd = cwd,
+        greek = symbol.greek,
+        key = symbol.key,
+        index = index,
+    }
+    cwd_groups[cwd] = group
+    next_cwd_group = next_cwd_group + 1
+    return group
+end
 
 -- Exposed read-only so tests can assert against the tracked global cwd
 -- without relying on the unreliable getcwd(-1).
-function M.get_global_cwd()
-    return global_cwd
-end
+function M.get_global_cwd() return global_cwd end
 
 vim.api.nvim_create_autocmd("DirChanged", {
     pattern = "global",
+    callback = function(args) global_cwd = vim.fs.normalize(args.file) end,
+})
+
+vim.api.nvim_create_autocmd("DirChanged", {
+    pattern = "tabpage",
     callback = function(args)
-        global_cwd = vim.fs.normalize(args.file)
+        local cwd = vim.fs.normalize(args.file)
+        if cwd ~= global_cwd then
+            register_cwd_group(cwd)
+        end
     end,
 })
 
@@ -347,6 +389,10 @@ local function tab_str(tabnr, label, active)
     return string.format("%%%dT%s %d %s%s %%#TabLine#", tabnr, hl, tabnr, hl, label)
 end
 
+local function tab_width(tabnr, label)
+    return 1 + vim.fn.strdisplaywidth(tostring(tabnr)) + 1 + vim.fn.strdisplaywidth(label) + 1
+end
+
 local function _scrolled_range(tabs, total, cur, cols)
     if #tabs == 0 or total == 0 then
         return { start = 1, end_ = 1, left_arrow = false, right_arrow = false }
@@ -431,17 +477,19 @@ local function tabline()
     local tabs = {}
     for tabnr = 1, total do
         local label = tab_label(tabpages[tabnr], tabnr)
-        -- Mark tabs that have their own working directory (differing from the
-        -- global cwd). The tabline is a statusline-format string, so a literal
-        -- "%" must be escaped as "%%"; a bare "%" would be parsed as a
-        -- statusline item, rendering nothing while still consuming width.
+        -- Mark tabs whose tab-local cwd belongs to a tracked group. A cwd
+        -- that predates this module's DirChanged handler is intentionally
+        -- left unmarked.
         local tcwd = vim.fs.normalize(vim.fn.getcwd(-1, tabnr))
         if tcwd ~= global_cwd then
-            label = label .. "%%"
+            local group = cwd_groups[tcwd]
+            if group then
+                label = label .. group.greek
+            end
         end
         tabs[tabnr] = {
             label = label,
-            w = 1 + #tostring(tabnr) + 1 + #label + 1,
+            w = tab_width(tabnr, label),
         }
     end
 
@@ -512,6 +560,11 @@ M.open_in_picked_tab = open_in_picked_tab
 M._open_current_buffer_in_new_tab = open_current_buffer_in_new_tab
 M._scrolled_range = _scrolled_range
 M.tabline = tabline
+
+function M._reset_cwd_groups()
+    cwd_groups = {}
+    next_cwd_group = 1
+end
 
 vim.o.tabline = "%!v:lua.require'ytret.tabs'.tabline()"
 
