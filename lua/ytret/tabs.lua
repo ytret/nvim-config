@@ -272,23 +272,37 @@ vim.keymap.set("n", "<M-;>", prompt_switch_tab)
 
 -- Switch the current tab's local working directory (:tcd) to a registered
 -- cwd group by its mnemonic Latin key (A = α, B = β, G = γ, ...).
+local function greek_for_key(key)
+    for _, symbol in ipairs(cwd_group_symbols) do
+        if symbol.key == key then
+            return symbol.greek
+        end
+    end
+    return key
+end
+
 local function switch_cwd_group(key)
     local cwd = M.cwd_for_group_key(key)
+    local greek = greek_for_key(key)
     if not cwd then
-        print(string.format("No group %s", key))
+        print(string.format("No group %s", greek))
         return false
     end
     if vim.fn.isdirectory(cwd) == 0 then
-        print(string.format("Group %s directory no longer exists", key))
+        print(string.format("Group %s directory no longer exists", greek))
         return false
     end
     vim.cmd("tcd " .. vim.fn.fnameescape(cwd))
     return true
 end
 
+-- Reset the current tab's working directory to the global :cd directory.
+local function switch_to_global_cwd() vim.cmd("tcd " .. vim.fn.fnameescape(global_cwd)) end
+
 for _, key in ipairs({ "A", "B", "G", "D", "E", "Z", "H", "T", "I", "K" }) do
     vim.keymap.set("n", "<leader>tg" .. key:lower(), function() switch_cwd_group(key) end)
 end
+vim.keymap.set("n", "<leader>tgG", switch_to_global_cwd)
 
 local function rtl_components(dir)
     local parts = {}
@@ -629,6 +643,8 @@ M._hidden_indicator = hidden_indicator
 M.tabline = tabline
 M.prompt_switch_tab = prompt_switch_tab
 M.switch_cwd_group = switch_cwd_group
+M.switch_to_global_cwd = switch_to_global_cwd
+M.greek_for_key = greek_for_key
 
 function M._reset_cwd_groups()
     cwd_groups = {}
