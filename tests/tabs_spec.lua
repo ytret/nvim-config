@@ -137,6 +137,58 @@ describe("tabs", function()
         end)
     end)
 
+    describe("prompt_switch_tab", function()
+        local saved_prompt
+
+        before_each(function()
+            saved_prompt = tabprompt.prompt_for_tab
+            -- Ensure we have exactly 3 tabs, on tab 2
+            while vim.fn.tabpagenr("$") < 3 do
+                vim.cmd("tabnew")
+            end
+            while vim.fn.tabpagenr("$") > 3 do
+                vim.cmd("tabclose 4")
+            end
+            vim.cmd("tabnext 2")
+            assert.are.equal(3, vim.fn.tabpagenr("$"))
+            assert.are.equal(2, vim.fn.tabpagenr())
+        end)
+
+        after_each(function() tabprompt.prompt_for_tab = saved_prompt end)
+
+        it("switches to the tab number returned by the prompt", function()
+            tabprompt.prompt_for_tab = function() return { tabnr = 3 } end
+
+            tabs.prompt_switch_tab()
+
+            assert.are.equal(3, vim.fn.tabpagenr())
+        end)
+
+        it("switches to tab 1 when prompt returns tabnr 1", function()
+            tabprompt.prompt_for_tab = function() return { tabnr = 1 } end
+
+            tabs.prompt_switch_tab()
+
+            assert.are.equal(1, vim.fn.tabpagenr())
+        end)
+
+        it("does nothing when prompt returns nil (cancelled)", function()
+            tabprompt.prompt_for_tab = function() return nil end
+
+            tabs.prompt_switch_tab()
+
+            assert.are.equal(2, vim.fn.tabpagenr())
+        end)
+
+        it("does nothing for non-tabnr results", function()
+            tabprompt.prompt_for_tab = function() return { new = "end" } end
+
+            tabs.prompt_switch_tab()
+
+            assert.are.equal(2, vim.fn.tabpagenr())
+        end)
+    end)
+
     describe("TabNew cwd behavior", function()
         local saved_dir
 
