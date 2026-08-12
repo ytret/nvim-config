@@ -413,7 +413,7 @@ end
 
 local function _scrolled_range(tabs, total, cur, cols)
     if #tabs == 0 or total == 0 then
-        return { start = 1, end_ = 1, left_arrow = false, right_arrow = false }
+        return { start = 1, end_ = 1, left_hidden = 0, right_hidden = 0 }
     end
 
     -- Total width if all tabs are rendered
@@ -423,20 +423,19 @@ local function _scrolled_range(tabs, total, cur, cols)
     end
 
     if total_w <= cols then
-        return { start = 1, end_ = total, left_arrow = false, right_arrow = false }
+        return { start = 1, end_ = total, left_hidden = 0, right_hidden = 0 }
     end
 
-    local avail = cols
     local s, e = cur, cur
     local w = tabs[cur].w
 
     -- Phase 1: first include up to 2 tabs on each side of the active tab
     for _ = 1, 2 do
-        if e < total and w + 1 + tabs[e + 1].w <= avail then
+        if e < total and w + 1 + tabs[e + 1].w <= cols then
             e = e + 1
             w = w + 1 + tabs[e].w
         end
-        if s > 1 and w + 1 + tabs[s - 1].w <= avail then
+        if s > 1 and w + 1 + tabs[s - 1].w <= cols then
             s = s - 1
             w = w + 1 + tabs[s].w
         end
@@ -445,12 +444,12 @@ local function _scrolled_range(tabs, total, cur, cols)
     -- Phase 2: expand further outward while space allows
     while true do
         local changed = false
-        while e < total and w + 1 + tabs[e + 1].w <= avail do
+        while e < total and w + 1 + tabs[e + 1].w <= cols do
             e = e + 1
             w = w + 1 + tabs[e].w
             changed = true
         end
-        while s > 1 and w + 1 + tabs[s - 1].w <= avail do
+        while s > 1 and w + 1 + tabs[s - 1].w <= cols do
             s = s - 1
             w = w + 1 + tabs[s].w
             changed = true
@@ -460,18 +459,17 @@ local function _scrolled_range(tabs, total, cur, cols)
         end
     end
 
-    -- Phase 3: reserve space for scroll indicators
-    local left_arrow = s > 1
-    local right_arrow = e < total
-    if left_arrow then
-        avail = avail - 3
-    end
-    if right_arrow then
-        avail = avail - 3
+    -- Phase 3: retract tabs from the furthest side until the visible tabs plus
+    -- the hidden-tab count indicators fit within the columns. The indicator
+    -- width is recomputed each iteration because the counts (and hence their
+    -- digit width) grow as tabs are retracted.
+    local function hidden_width()
+        local left = s - 1
+        local right = total - e
+        return (left > 0 and #tostring(left) + 1 or 0) + (right > 0 and #tostring(right) + 1 or 0)
     end
 
-    -- Phase 4: retract tabs from the furthest side to fit arrows
-    while w > avail and s < e do
+    while s < e and w + hidden_width() > cols do
         if cur - s <= e - cur then
             w = w - (1 + tabs[e].w)
             e = e - 1
@@ -480,10 +478,22 @@ local function _scrolled_range(tabs, total, cur, cols)
             s = s + 1
         end
     end
-    left_arrow = s > 1
-    right_arrow = e < total
 
-    return { start = s, end_ = e, left_arrow = left_arrow, right_arrow = right_arrow }
+    return { start = s, end_ = e, left_hidden = s - 1, right_hidden = total - e }
+end
+
+--- Render a hidden-tab count indicator, or "" when there are none.
+---@param count integer number of hidden tabs on one side
+---@param side string "left" or "right"
+---@return string
+local function hidden_indicator(count, side)
+    if count <= 0 then
+        return ""
+    end
+    if side == "left" then
+        return "<" .. tostring(count)
+    end
+    return tostring(count) .. ">"
 end
 
 local function tabline()
@@ -532,8 +542,8 @@ local function tabline()
     local range = _scrolled_range(tabs, total, cur, cols)
 
     local parts = {}
-    if range.left_arrow then
-        table.insert(parts, "%#TabLineFill# < ")
+    if range.left_hidden > 0 then
+        table.insert(parts, "%#TabLineFill#" .. hidden_indicator(range.left_hidden, "left"))
     end
     for tabnr = range.start, range.end_ do
         if tabnr > range.start then
@@ -541,8 +551,8 @@ local function tabline()
         end
         table.insert(parts, tab_str(tabnr, tabs[tabnr].label, tabnr == cur))
     end
-    if range.right_arrow then
-        table.insert(parts, "%#TabLineFill# > ")
+    if range.right_hidden > 0 then
+        table.insert(parts, "%#TabLineFill#" .. hidden_indicator(range.right_hidden, "right"))
     end
     table.insert(parts, "%#TabLineFill#%T")
     return table.concat(parts)
@@ -577,6 +587,7 @@ end
 M.open_in_picked_tab = open_in_picked_tab
 M._open_current_buffer_in_new_tab = open_current_buffer_in_new_tab
 M._scrolled_range = _scrolled_range
+M._hidden_indicator = hidden_indicator
 M.tabline = tabline
 
 function M._reset_cwd_groups()
