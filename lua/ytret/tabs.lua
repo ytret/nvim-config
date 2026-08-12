@@ -270,6 +270,26 @@ end
 
 vim.keymap.set("n", "<M-;>", prompt_switch_tab)
 
+-- Switch the current tab's local working directory (:tcd) to a registered
+-- cwd group by its mnemonic Latin key (A = α, B = β, G = γ, ...).
+local function switch_cwd_group(key)
+    local cwd = M.cwd_for_group_key(key)
+    if not cwd then
+        print(string.format("No group %s", key))
+        return false
+    end
+    if vim.fn.isdirectory(cwd) == 0 then
+        print(string.format("Group %s directory no longer exists", key))
+        return false
+    end
+    vim.cmd("tcd " .. vim.fn.fnameescape(cwd))
+    return true
+end
+
+for _, key in ipairs({ "A", "B", "G", "D", "E", "Z", "H", "T", "I", "K" }) do
+    vim.keymap.set("n", "<leader>tg" .. key:lower(), function() switch_cwd_group(key) end)
+end
+
 local function rtl_components(dir)
     local parts = {}
     while dir ~= "" and dir ~= "." and dir ~= "/" do
@@ -608,6 +628,7 @@ M._scrolled_range = _scrolled_range
 M._hidden_indicator = hidden_indicator
 M.tabline = tabline
 M.prompt_switch_tab = prompt_switch_tab
+M.switch_cwd_group = switch_cwd_group
 
 function M._reset_cwd_groups()
     cwd_groups = {}
