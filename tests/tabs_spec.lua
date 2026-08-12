@@ -299,6 +299,45 @@ describe("tabs", function()
             assert.is_nil(tabs.cwd_for_group_key("K"))
         end)
 
+        it("switch_cwd_group tcd's the current tab to a registered group", function()
+            vim.cmd("cd /usr")
+            assert.are.equal("/usr", vim.fn.getcwd())
+
+            -- Register group A by giving a second tab a tab-local cwd.
+            vim.cmd("tabnew")
+            vim.cmd("tcd /")
+            vim.cmd("tabprev")
+
+            -- Current tab is back on the global cwd; switch it to group A.
+            assert.are.equal("/usr", vim.fn.getcwd())
+            assert.is_true(tabs.switch_cwd_group("A"))
+            assert.are.equal("/", vim.fn.getcwd())
+        end)
+
+        it("switch_cwd_group returns false for an unregistered key", function()
+            vim.cmd("cd /usr")
+            local before = vim.fn.getcwd()
+            assert.is_false(tabs.switch_cwd_group("A"))
+            assert.are.equal(before, vim.fn.getcwd())
+        end)
+
+        it("switch_cwd_group returns false for a missing directory", function()
+            local tmpdir = vim.fn.tempname()
+            vim.fn.mkdir(tmpdir)
+
+            -- Global cwd is /usr, distinct from tmpdir, so a second tab can
+            -- register tmpdir as group A via a tab-local :tcd.
+            vim.cmd("cd /usr")
+            vim.cmd("tabnew")
+            vim.cmd("tcd " .. vim.fn.fnameescape(tmpdir))
+            vim.cmd("tabprev")
+            vim.fn.delete(tmpdir, "rf")
+
+            local before = vim.fn.getcwd()
+            assert.is_false(tabs.switch_cwd_group("A"))
+            assert.are.equal(before, vim.fn.getcwd())
+        end)
+
         it("twd_statusline shows the cwd, '%'-marked only when it differs", function()
             vim.cmd("cd /usr")
 
