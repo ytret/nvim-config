@@ -252,6 +252,24 @@ vim.keymap.set("n", "<M-7>", gen_tabn(7))
 vim.keymap.set("n", "<M-8>", gen_tabn(8))
 vim.keymap.set("n", "<M-9>", gen_tabn(9))
 
+-- Switch to a tab by number, prompting for the tab number. Works for any
+-- number of tabs (unlike <M-1>..<M-9>, which are limited to single digits).
+local function prompt_switch_tab()
+    vim.cmd("redraw")
+
+    local result = tabprompt.prompt_for_tab({
+        getchar_prompt = "Tab (1-%d): ",
+        input_prompt = "Tab number: ",
+        on_invalid = function() print("Invalid tab number") end,
+    })
+
+    if result and result.tabnr then
+        vim.cmd.tabnext(tostring(result.tabnr))
+    end
+end
+
+vim.keymap.set("n", "<M-;>", prompt_switch_tab)
+
 local function rtl_components(dir)
     local parts = {}
     while dir ~= "" and dir ~= "." and dir ~= "/" do
@@ -589,6 +607,7 @@ M._open_current_buffer_in_new_tab = open_current_buffer_in_new_tab
 M._scrolled_range = _scrolled_range
 M._hidden_indicator = hidden_indicator
 M.tabline = tabline
+M.prompt_switch_tab = prompt_switch_tab
 
 function M._reset_cwd_groups()
     cwd_groups = {}
