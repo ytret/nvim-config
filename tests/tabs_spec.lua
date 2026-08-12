@@ -321,6 +321,46 @@ describe("tabs", function()
             assert.are.equal(before, vim.fn.getcwd())
         end)
 
+        it("switch_cwd_group error messages use the Greek letter", function()
+            local saved_print = print
+            local captured = {}
+            print = function(...)
+                local parts = {}
+                for i = 1, select("#", ...) do
+                    parts[i] = tostring(select(i, ...))
+                end
+                captured[#captured + 1] = table.concat(parts, "\t")
+            end
+
+            local ok = tabs.switch_cwd_group("A")
+            print = saved_print
+
+            assert.is_false(ok)
+            assert.are.equal(1, #captured)
+            assert.are.equal("No group α", captured[1])
+        end)
+
+        it("greek_for_key maps Latin keys to Greek letters", function()
+            assert.are.equal("α", tabs.greek_for_key("A"))
+            assert.are.equal("β", tabs.greek_for_key("B"))
+            assert.are.equal("γ", tabs.greek_for_key("G"))
+            -- Unknown keys fall back to the key itself.
+            assert.are.equal("X", tabs.greek_for_key("X"))
+        end)
+
+        it("switch_to_global_cwd resets a tab-local cwd to the global cwd", function()
+            vim.cmd("cd /usr")
+            local global = vim.fn.getcwd()
+
+            -- Give the current tab a tab-local cwd via a second tab.
+            vim.cmd("tabnew")
+            vim.cmd("tcd /")
+            assert.are.equal("/", vim.fn.getcwd())
+
+            tabs.switch_to_global_cwd()
+            assert.are.equal(global, vim.fn.getcwd())
+        end)
+
         it("switch_cwd_group returns false for a missing directory", function()
             local tmpdir = vim.fn.tempname()
             vim.fn.mkdir(tmpdir)
