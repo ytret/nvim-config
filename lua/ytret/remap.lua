@@ -33,8 +33,27 @@ vim.keymap.set("c", "<C-D>", "<Delete>")
 vim.keymap.set("c", "<Esc>f", "<S-Right>")
 vim.keymap.set("c", "<Esc>b", "<S-Left>")
 
--- Delete a single char, not indentation
-vim.keymap.set("i", "<C-h>", "<Left><C-o>x")
+-- Delete a single char, not a whole indent level. By default <BS> eats a full
+-- 'softtabstop'/'shiftwidth' worth of indentation (see 'smarttab' + 'softtabstop').
+local function delete_char_before_cursor()
+    local row, byte_col = unpack(vim.api.nvim_win_get_cursor(0))
+    if byte_col > 0 then
+        local line = vim.api.nvim_get_current_line()
+        local prefix = line:sub(1, byte_col)
+        local nchar = vim.str_utfindex(prefix)
+        local start = vim.str_byteindex(prefix, nchar - 1)
+        vim.api.nvim_set_current_line(line:sub(1, start) .. line:sub(byte_col + 1))
+        vim.api.nvim_win_set_cursor(0, { row, start })
+    elseif row > 1 then
+        -- At the start of a line: join with the previous line, like <BS> with 'eol'.
+        local prev = vim.api.nvim_buf_get_lines(0, row - 2, row - 1, false)[1]
+        local cur = vim.api.nvim_get_current_line()
+        vim.api.nvim_buf_set_lines(0, row - 2, row, false, { prev .. cur })
+        vim.api.nvim_win_set_cursor(0, { row - 1, #prev })
+    end
+end
+vim.keymap.set("i", "<BS>", delete_char_before_cursor)
+vim.keymap.set("i", "<C-h>", delete_char_before_cursor)
 
 -- Remove whitespace (preserves cursor position, no jumplist/mark pollution)
 vim.keymap.set("n", "<leader>rw", function()
