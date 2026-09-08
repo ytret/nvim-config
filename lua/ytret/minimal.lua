@@ -94,3 +94,13 @@ vim.api.nvim_create_user_command("MyFullConfig", load_full_config, {
 })
 
 vim.keymap.set("n", "<leader>fc", load_full_config, { desc = "Load full config" })
+
+-- Show a hint once at startup so it's obvious how to upgrade this session.
+vim.api.nvim_create_autocmd("VimEnter", {
+    once = true,
+    callback = function()
+        vim.notify("Load full config with :MyFullConfig (<leader>fc)", vim.log.levels.INFO, {
+            title = "minimal config",
+        })
+    end,
+})
