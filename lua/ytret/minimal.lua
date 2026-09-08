@@ -9,6 +9,9 @@
 --
 -- Suggested shell alias (zsh/bash):
 --     alias nvq="nvim --noplugin -u ~/.config/nvim/lua/ytret/minimal.lua"
+--
+-- To upgrade to the full config without restarting, run `:MyFullConfig`
+-- (or `<leader>fc`); lazy.nvim + every plugin is loaded on demand.
 
 local config_dir = vim.fn.stdpath("config")
 
@@ -45,3 +48,49 @@ local function pick_colorscheme()
 end
 
 pick_colorscheme()
+
+--- Load the full config (lazy.nvim + all plugins) into this session without
+--- restarting nvim. Useful when a quick screen-share turns into real work.
+local function load_full_config()
+    -- Guard via a global so the loaded state is observable from anywhere
+    -- (health checks, `:echo g:my_full_config_loaded`, etc.).
+    if vim.g.my_full_config_loaded then
+        vim.notify("Full config already loaded", vim.log.levels.INFO)
+        return
+    end
+    vim.g.my_full_config_loaded = true
+
+    -- Mirror the parts of lua/ytret/init.lua that minimal.lua skipped. The
+    -- set/remap/tabs modules were already required above, so re-requiring them
+    -- here would be a cached no-op; only lazy is genuinely new.
+    vim.g.loaded_netrw = 1
+    vim.g.loaded_netrwPlugin = 1
+    pcall(require, "ytret.local-pre")
+
+    -- lazy.nvim's setup() bails out when 'loadplugins' is off, which is what
+    -- --noplugin set. Re-enable it so lazy actually loads the plugin specs.
+    vim.go.loadplugins = true
+
+    -- Bootstrap lazy.nvim and load all plugin specs (the slow part).
+    require("ytret.lazy")
+
+    pcall(require, "ytret.local-post")
+
+    -- Source the plugin scripts that --noplugin skipped at startup. Only the
+    -- user's own plugin/ and after/plugin/ dirs — not every plugin repo on
+    -- 'runtimepath' (those are sourced by lazy.nvim as it loads each plugin).
+    local cfg = vim.fn.stdpath("config")
+    local files = vim.fn.glob(cfg .. "/plugin/**/*.lua", false, true)
+    vim.list_extend(files, vim.fn.glob(cfg .. "/after/plugin/**/*.lua", false, true))
+    for _, file in ipairs(files) do
+        vim.cmd("source " .. vim.fn.fnameescape(file))
+    end
+
+    vim.notify("Full config loaded", vim.log.levels.INFO)
+end
+
+vim.api.nvim_create_user_command("MyFullConfig", load_full_config, {
+    desc = "Load the full config (lazy.nvim + plugins) into this session",
+})
+
+vim.keymap.set("n", "<leader>fc", load_full_config, { desc = "Load full config" })
