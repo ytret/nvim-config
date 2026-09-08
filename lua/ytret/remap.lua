@@ -36,6 +36,17 @@ vim.keymap.set("c", "<Esc>b", "<S-Left>")
 -- Delete a single char, not a whole indent level. By default <BS> eats a full
 -- 'softtabstop'/'shiftwidth' worth of indentation (see 'smarttab' + 'softtabstop').
 local function delete_char_before_cursor()
+    -- Insert-mode mappings also fire in Replace mode (see |map-modes|), where
+    -- the vanilla <BS> undoes replace changes instead of deleting a character.
+    -- Re-feed the key without remapping to keep the built-in behavior there.
+    if vim.fn.mode(1):sub(1, 1) == "R" then
+        vim.api.nvim_feedkeys(
+            vim.api.nvim_replace_termcodes("<BS>", true, false, true),
+            "nit",
+            false
+        )
+        return
+    end
     local row, byte_col = unpack(vim.api.nvim_win_get_cursor(0))
     if byte_col > 0 then
         local line = vim.api.nvim_get_current_line()
