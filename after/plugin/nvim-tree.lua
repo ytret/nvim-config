@@ -129,6 +129,21 @@ require("nvim-tree").setup({
     end,
 })
 
+-- Keep the default file icon foreground, but inherit the window/cursor-line background.
+local function clear_file_icon_background()
+    local normal = vim.api.nvim_get_hl(0, { name = "NvimTreeNormal", link = false })
+    vim.api.nvim_set_hl(0, "NvimTreeFileIcon", {
+        fg = normal.fg,
+        ctermfg = normal.ctermfg,
+    })
+end
+
+clear_file_icon_background()
+vim.api.nvim_create_autocmd("ColorScheme", {
+    group = vim.api.nvim_create_augroup("NvimTreeIconBackground", { clear = true }),
+    callback = clear_file_icon_background,
+})
+
 vim.keymap.set("n", "<leader>pv", vim.cmd.NvimTreeFindFileToggle)
 
 vim.api.nvim_create_autocmd("VimResized", {
