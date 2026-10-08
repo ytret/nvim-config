@@ -43,6 +43,7 @@ require("nvim-tree").setup({
         sorter = "case_sensitive",
     },
     view = {
+        signcolumn = "no",
         float = {
             enable = true,
             open_win_config = function()
