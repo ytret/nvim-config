@@ -210,7 +210,7 @@ vim.lsp.config("clangd", {
     cmd = {
         "/usr/bin/env",
         "clangd",
-        "--query-driver=/usr/bin/arm-none-eabi-gcc,i686-elf-gcc,/nix/**/i686-elf-gcc,/usr/bin/gcc,/usr/bin/clang",
+        "--query-driver=/usr/bin/arm-none-eabi-gcc,i686-elf-gcc,/nix/**/i686-elf-gcc,/nix/**/clang*,/usr/bin/gcc,/usr/bin/clang",
         "--header-insertion=never",
     },
 })
