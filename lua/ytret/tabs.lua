@@ -197,18 +197,23 @@ end
 
 vim.keymap.set("n", "<leader>tm", prompt_move_tab)
 
--- Move current tab left/right
-vim.keymap.set("n", "<M-{>", function()
-    if vim.fn.tabpagenr() > 1 then
-        vim.cmd("tabmove -1")
-    end
-end)
+-- Move current tab left/right. Extended keyboard reporting preserves Shift
+-- on braces; retain the legacy forms for terminals that omit that modifier.
+for _, key in ipairs({ "<M-{>", "<M-S-{>" }) do
+    vim.keymap.set("n", key, function()
+        if vim.fn.tabpagenr() > 1 then
+            vim.cmd("tabmove -1")
+        end
+    end)
+end
 
-vim.keymap.set("n", "<M-}>", function()
-    if vim.fn.tabpagenr() < vim.fn.tabpagenr("$") then
-        vim.cmd("tabmove +1")
-    end
-end)
+for _, key in ipairs({ "<M-}>", "<M-S-}>" }) do
+    vim.keymap.set("n", key, function()
+        if vim.fn.tabpagenr() < vim.fn.tabpagenr("$") then
+            vim.cmd("tabmove +1")
+        end
+    end)
+end
 
 -- Open a new tab at the last, after, or before the active tab
 vim.keymap.set("n", "<leader>tn", function()
