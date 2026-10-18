@@ -162,6 +162,12 @@ require("lazy").setup({
         ft = "lua",
         opts = {
             library = {},
+            enabled = function(root_dir)
+                return not (
+                    vim.uv.fs_stat(root_dir .. "/.luarc.json")
+                    or vim.uv.fs_stat(root_dir .. "/.luarc.jsonc")
+                )
+            end,
         },
     },
 
