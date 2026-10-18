@@ -361,6 +361,57 @@ describe("cwd prompt", function()
         assert.are.equal(math.floor((40 - cfg.height - 2) / 2), cfg.row)
     end)
 
+    it("registers a WinEnter hook that re-enters insert mode", function()
+        run_map("<leader>ca")
+        local st = cwd._state()
+        local hooks = vim.api.nvim_get_autocmds({ event = "WinEnter", buffer = st.buf })
+        assert.are.equal(1, #hooks)
+        assert.is_function(hooks[1].callback)
+        hooks[1].callback()
+        assert.are.equal(st.win, vim.api.nvim_get_current_win())
+    end)
+
+    it("re-enters insert mode after another window (the picker) closes", function()
+        run_map("<leader>ca")
+        local st = cwd._state()
+        local calls, orig = 0, cwd._reenter_insert
+        cwd._reenter_insert = function()
+            calls = calls + 1
+            return orig()
+        end
+        local buf = vim.api.nvim_create_buf(false, true)
+        local float = vim.api.nvim_open_win(buf, true, {
+            relative = "editor",
+            width = 20,
+            height = 5,
+            row = 5,
+            col = 5,
+            style = "minimal",
+        })
+        vim.api.nvim_win_close(float, true)
+        cwd._reenter_insert = orig
+        assert.are.equal(st.win, vim.api.nvim_get_current_win())
+        assert.is_true(calls >= 1)
+        assert.is_not_nil(cwd._state())
+    end)
+
+    it("re-enters insert mode only for the focused prompt", function()
+        run_map("<leader>ca")
+        local st = cwd._state()
+        assert.is_true(cwd._reenter_insert())
+        vim.cmd("new")
+        assert.is_false(cwd._reenter_insert())
+        vim.api.nvim_set_current_win(st.win)
+        vim.cmd("close")
+    end)
+
+    it("does not re-enter insert once the prompt is closed", function()
+        run_map("<leader>ca")
+        press("<Esc>")
+        assert.is_nil(cwd._state())
+        assert.is_false(cwd._reenter_insert())
+    end)
+
     it("edits the path by component", function()
         run_map("<leader>ca")
         set_prompt_line("/usr/local/lib")
@@ -466,6 +517,17 @@ describe("cwd prompt", function()
             local cfg = vim.api.nvim_win_get_config(cwd._state().win)
             assert.is_truthy(cfg.footer[1][1]:match("No subdirectories"))
             vim.fn.delete(empty, "rf")
+        end)
+
+        it("opens a small centered window, not fullscreen", function()
+            open_with("/usr/")
+            press("<Tab>")
+            local winopts = calls[1].opts.winopts
+            assert.is_false(winopts.fullscreen)
+            assert.is_true(winopts.height < 1)
+            assert.is_true(winopts.width < 1)
+            assert.are.equal(0.5, winopts.row)
+            assert.are.equal(0.5, winopts.col)
         end)
 
         it("binds <Tab> in the prompt", function()
