@@ -247,6 +247,11 @@ function M.setup(opts)
             ["ctrl-u"] = "half-page-up",
         },
     })
+    opts.actions = vim.tbl_deep_extend("force", opts.actions or {}, {
+        files = {
+            ["alt-f"] = false,
+        },
+    })
 
     return opts
 end
