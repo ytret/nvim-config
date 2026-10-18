@@ -125,7 +125,10 @@ require("nvim-tree").setup({
                 if cwd then
                     api.tree.change_root(cwd)
                 else
-                    vim.notify("Tab cwd group " .. group.greek .. " does not exist", vim.log.levels.INFO)
+                    vim.notify(
+                        "Tab cwd group " .. group.greek .. " does not exist",
+                        vim.log.levels.INFO
+                    )
                 end
             end, opts("Root at tab cwd group " .. group.greek))
         end
