@@ -182,8 +182,8 @@ local function close_prompt()
         return
     end
     local win = state.win
-    if state.resize_autocmd then
-        pcall(vim.api.nvim_del_autocmd, state.resize_autocmd)
+    for _, id in ipairs(state.autocmds or {}) do
+        pcall(vim.api.nvim_del_autocmd, id)
     end
     state = nil
     if vim.api.nvim_win_is_valid(win) then
@@ -286,7 +286,10 @@ function M._pick_component()
         prompt = "cd> ",
         query = partial,
         header = " " .. (base == "" and dir .. "/" or base) .. " ",
-        winopts = { height = 0.35, width = 0.6 },
+        -- The user config turns fullscreen on for every picker; opt out here and
+        -- center a small window instead (row/col are fractions of the leftover
+        -- space, so 0.5 means centered).
+        winopts = { fullscreen = false, height = 0.35, width = 0.6, row = 0.5, col = 0.5 },
         previewer = false,
         actions = {
             ["default"] = function(selected)
@@ -346,12 +349,31 @@ function M._open(prefill)
     vim.wo[win].wrap = false
 
     state = { buf = buf, win = win, cfg = cfg }
-    state.resize_autocmd = vim.api.nvim_create_autocmd("VimResized", {
-        callback = recenter,
-    })
+    state.autocmds = {
+        vim.api.nvim_create_autocmd("VimResized", { callback = recenter }),
+        -- Leaving the prompt (the directory picker, another window) drops insert
+        -- mode; put it back when the prompt is focused again.
+        vim.api.nvim_create_autocmd("WinEnter", {
+            buffer = buf,
+            callback = function() M._reenter_insert() end,
+        }),
+    }
     set_maps(buf)
     vim.api.nvim_win_set_cursor(win, { 1, #prefill })
     vim.cmd("startinsert!")
+end
+
+---Re-enter insert mode if the prompt window is focused. Exposed for tests.
+---@return boolean entered
+function M._reenter_insert()
+    if not state or not vim.api.nvim_win_is_valid(state.win) then
+        return false
+    end
+    if vim.api.nvim_get_current_win() ~= state.win or vim.fn.mode():sub(1, 1) == "i" then
+        return false
+    end
+    vim.cmd("startinsert!")
+    return true
 end
 
 ---The open prompt's state, or nil. Exposed for tests.
