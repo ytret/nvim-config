@@ -155,6 +155,80 @@ describe("cwd path helpers", function()
     end)
 end)
 
+describe("cwd path helpers", function()
+    describe("_split_component", function()
+        local cases = {
+            { "/a/luax/b", 6, { "/a/", "luax", 3, 7 } },
+            { "/a/lua/", 6, { "/a/", "lua", 3, 6 } },
+            { "/a/lua/", 7, { "/a/lua/", "", 7, 7 } },
+            { "~/", 2, { "~/", "", 2, 2 } },
+            { "/", 1, { "/", "", 1, 1 } },
+            { "lu", 2, { "", "lu", 0, 2 } },
+            { "", 0, { "", "", 0, 0 } },
+        }
+        for _, case in ipairs(cases) do
+            local line, col, want = case[1], case[2], case[3]
+            it(
+                ("%s at %d"):format(vim.inspect(line), col),
+                function() assert.are.same(want, { cwd._split_component(line, col) }) end
+            )
+        end
+    end)
+
+    describe("_resolve_base", function()
+        it(
+            "resolves an empty base to the current directory",
+            function() assert.are.equal(vim.fs.normalize(vim.fn.getcwd()), cwd._resolve_base("")) end
+        )
+
+        it("resolves a relative base against the current directory", function()
+            local base = vim.fn.fnamemodify("lua", ":p")
+            assert.are.equal(vim.fs.normalize(base), cwd._resolve_base("lua/"))
+        end)
+
+        it(
+            "resolves a leading ~ against $HOME",
+            function() assert.are.equal(vim.fs.normalize(vim.env.HOME), cwd._resolve_base("~/")) end
+        )
+
+        it("rejects a missing base", function()
+            local dir, err = cwd._resolve_base("/no/such/dir/")
+            assert.is_nil(dir)
+            assert.is_truthy(err:match("No such directory"))
+        end)
+
+        it("rejects a base that is a file", function()
+            local dir, err = cwd._resolve_base("/usr/bin/env")
+            assert.is_nil(dir)
+            assert.is_truthy(err:match("Not a directory"))
+        end)
+    end)
+
+    describe("_dir_candidates", function()
+        it("lists only directories, sorted, including hidden ones", function()
+            local names = cwd._dir_candidates(vim.env.HOME)
+            assert.is_table(names)
+            assert.is_true(vim.tbl_contains(names, ".config"))
+            for i = 2, #names do
+                assert.is_true(names[i - 1] < names[i])
+            end
+        end)
+
+        it("excludes files", function()
+            local names = cwd._dir_candidates("/usr/bin")
+            for _, name in ipairs(names) do
+                assert.are.equal(1, vim.fn.isdirectory("/usr/bin/" .. name))
+            end
+        end)
+
+        it("reports an unreadable directory", function()
+            local names, err = cwd._dir_candidates("/no/such/dir")
+            assert.is_nil(names)
+            assert.is_truthy(err)
+        end)
+    end)
+end)
+
 describe("cwd prompt", function()
     local saved_cwd
     local saved_tabs
@@ -299,5 +373,104 @@ describe("cwd prompt", function()
         assert.are.equal(1, vim.api.nvim_win_get_cursor(cwd._state().win)[2])
         press("<M-f>")
         assert.are.equal(5, vim.api.nvim_win_get_cursor(cwd._state().win)[2])
+    end)
+
+    describe("completion", function()
+        local calls
+
+        before_each(function()
+            calls = {}
+            package.loaded["fzf-lua"] = {
+                fzf_exec = function(items, opts) calls[#calls + 1] = { items = items, opts = opts } end,
+            }
+        end)
+
+        after_each(function() package.loaded["fzf-lua"] = nil end)
+
+        local function open_with(text)
+            run_map("<leader>ca")
+            local st = set_prompt_line(text)
+            vim.api.nvim_win_set_cursor(st.win, { 1, #text })
+            return st
+        end
+
+        local function accept(name)
+            name = name or calls[#calls].items[1]
+            local before = prompt_line()
+            calls[#calls].opts.actions["default"]({ name })
+            vim.wait(200, function() return prompt_line() ~= before end)
+            return name
+        end
+        it("opens a picker of the subdirectories on <Tab>", function()
+            open_with("/usr/")
+            press("<Tab>")
+            assert.are.equal(1, #calls)
+            assert.is_true(vim.tbl_contains(calls[1].items, "local"))
+            for _, name in ipairs(calls[1].items) do
+                assert.are.equal(1, vim.fn.isdirectory("/usr/" .. name))
+            end
+        end)
+
+        it("seeds the query with the partial component", function()
+            open_with("/usr/lo")
+            press("<Tab>")
+            assert.are.equal("lo", calls[1].opts.query)
+            assert.are.equal(" /usr/ ", calls[1].opts.header)
+        end)
+
+        it("opens the whole level for an empty component", function()
+            open_with("~/")
+            press("<Tab>")
+            assert.are.equal("", calls[1].opts.query)
+            assert.is_true(#calls[1].items > 0)
+        end)
+
+        it("resolves a relative base against the current directory", function()
+            open_with("lua/")
+            press("<Tab>")
+            assert.is_true(vim.tbl_contains(calls[1].items, "ytret"))
+        end)
+
+        it("inserts the choice and leaves the cursor after the slash", function()
+            open_with("/usr/")
+            press("<Tab>")
+            accept("local")
+            assert.are.equal("/usr/local/", prompt_line())
+            assert.are.equal(#"/usr/local/", vim.api.nvim_win_get_cursor(cwd._state().win)[2])
+        end)
+
+        it("replaces only the component under the cursor", function()
+            open_with("/usr/lo/locale")
+            vim.api.nvim_win_set_cursor(cwd._state().win, { 1, #"/usr/lo" })
+            press("<Tab>")
+            assert.are.equal("lo", calls[1].opts.query)
+            assert.are.equal(" /usr/ ", calls[1].opts.header)
+            accept("local")
+            assert.are.equal("/usr/local/locale", prompt_line())
+        end)
+
+        it("keeps the prompt open and reports a bad base dir", function()
+            open_with("/no/such/dir/x")
+            press("<Tab>")
+            assert.are.equal(0, #calls)
+            local cfg = vim.api.nvim_win_get_config(cwd._state().win)
+            assert.is_truthy(cfg.footer[1][1]:match("No such directory"))
+        end)
+
+        it("reports an empty level without opening a picker", function()
+            local empty = vim.fn.tempname()
+            vim.fn.mkdir(empty, "p")
+            open_with(empty .. "/")
+            press("<Tab>")
+            assert.are.equal(0, #calls)
+            local cfg = vim.api.nvim_win_get_config(cwd._state().win)
+            assert.is_truthy(cfg.footer[1][1]:match("No subdirectories"))
+            vim.fn.delete(empty, "rf")
+        end)
+
+        it("binds <Tab> in the prompt", function()
+            run_map("<leader>ca")
+            assert.is_function(prompt_map("<Tab>"))
+        end)
     end)
 end)
