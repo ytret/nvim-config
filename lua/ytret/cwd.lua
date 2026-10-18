@@ -8,6 +8,8 @@ local state
 -- Keep the hint footer fully visible in the smallest window.
 local FOOTER_HINT = " <CR> cd   <S-CR>/<C-e> tcd   <Esc> cancel "
 local MIN_WIDTH = #FOOTER_HINT + 2
+-- Preferred number of list rows in the directory picker.
+local PICKER_ROWS = 16
 
 ---Expand a leading "~" using $HOME.
 ---@param path string
@@ -156,11 +158,19 @@ function M._chdir(dir, scope)
     return true
 end
 
----Centered float config sized for `prefill`; recomputed on resize.
----@param prefill string
+---The prompt's content width: a fixed 60% of the screen, never narrower than the
+---hint footer. Fixed so the bar does not resize (and shift) while typing.
+---@return integer
+function M._prompt_width()
+    local max_width = math.max(vim.o.columns - 4, 10)
+    local wanted = math.floor(vim.o.columns * 0.6)
+    return math.min(math.max(wanted, MIN_WIDTH), max_width)
+end
+
+---Centered float config; recomputed on resize.
 ---@return table
-local function prompt_config(prefill)
-    local width = math.min(math.max(#prefill + 12, MIN_WIDTH), math.max(vim.o.columns - 4, 10))
+local function prompt_config()
+    local width = M._prompt_width()
     local height = 1
     return {
         relative = "editor",
@@ -213,7 +223,7 @@ local function recenter()
         return
     end
     local footer = state.cfg.footer
-    state.cfg = prompt_config(buffer_line())
+    state.cfg = prompt_config()
     state.cfg.footer = footer
     vim.api.nvim_win_set_config(state.win, state.cfg)
 end
@@ -256,6 +266,44 @@ local function insert_component(line, name, start, stop)
     end
 end
 
+---Keep the tail of `text` (the meaningful part of a path) within `max` bytes.
+---@param text string
+---@param max integer
+---@return string
+function M._head_elide(text, max)
+    max = math.max(max, 1)
+    if #text <= max then
+        return text
+    end
+    local ellipsis = "\u{2026}"
+    if max <= #ellipsis then
+        return text:sub(-max)
+    end
+    return ellipsis .. text:sub(#text - (max - #ellipsis) + 1)
+end
+
+---Picker geometry: the prompt's exact width and left edge, docked right below it.
+---fzf-lua counts the border in `width`/`height`, while `row`/`col` are the
+---footprint's top-left, so a picker under the prompt gets
+---`row = prompt.row + 2` (1 content row + 1 bottom border), `col = prompt.col - 1`.
+---@return table
+function M._picker_winopts()
+    local cfg = state.cfg
+    local avail = vim.o.lines - (cfg.row + 2) - vim.o.cmdheight
+    -- Prefer PICKER_ROWS list rows (plus its border), shrinking to whatever
+    -- fits below the prompt so the picker never runs off the screen.
+    local total = avail >= 3 and math.min(PICKER_ROWS + 2, avail) or math.max(avail, 1)
+    return {
+        -- The user config turns fullscreen on for every picker; opt out here.
+        fullscreen = false,
+        width = cfg.width + 2,
+        height = total,
+        -- Normally right below the prompt; pulled up only if that would not fit.
+        row = math.min(cfg.row + 2, math.max(vim.o.lines - vim.o.cmdheight - total, 0)),
+        col = math.max(cfg.col - 1, 0),
+    }
+end
+
 ---Complete the path component under the cursor with a directory picker.
 function M._pick_component()
     if not state then
@@ -282,14 +330,12 @@ function M._pick_component()
         set_footer(" fzf-lua not available ")
         return
     end
+    local winopts = M._picker_winopts()
     fzf.fzf_exec(names, {
         prompt = "cd> ",
         query = partial,
-        header = " " .. (base == "" and dir .. "/" or base) .. " ",
-        -- The user config turns fullscreen on for every picker; opt out here and
-        -- center a small window instead (row/col are fractions of the leftover
-        -- space, so 0.5 means centered).
-        winopts = { fullscreen = false, height = 0.35, width = 0.6, row = 0.5, col = 0.5 },
+        header = " " .. M._head_elide(line, winopts.width - 4) .. " ",
+        winopts = winopts,
         previewer = false,
         actions = {
             ["default"] = function(selected)
@@ -344,7 +390,7 @@ function M._open(prefill)
     vim.bo[buf].swapfile = false
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, { prefill })
 
-    local cfg = prompt_config(prefill)
+    local cfg = prompt_config()
     local win = vim.api.nvim_open_win(buf, true, cfg)
     vim.wo[win].wrap = false
 
