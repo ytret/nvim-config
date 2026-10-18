@@ -363,16 +363,39 @@ function M._open(prefill)
     vim.cmd("startinsert!")
 end
 
+---Enter insert mode once a pending mode transition has settled.
+---fzf-lua restores focus before its own stopinsert applies, so requesting insert
+---immediately would be clobbered; wait for the mode to actually be normal.
+---@param tries integer|nil
+local function enter_insert_when_settled(tries)
+    tries = tries or 0
+    if not state or not vim.api.nvim_win_is_valid(state.win) then
+        return
+    end
+    if vim.api.nvim_get_current_win() ~= state.win then
+        return
+    end
+    if vim.fn.mode() == "n" then
+        -- Plain startinsert keeps the cursor where it was.
+        vim.cmd("startinsert")
+        return
+    end
+    if tries >= 20 then
+        return
+    end
+    vim.defer_fn(function() enter_insert_when_settled(tries + 1) end, 10)
+end
+
 ---Re-enter insert mode if the prompt window is focused. Exposed for tests.
 ---@return boolean entered
 function M._reenter_insert()
     if not state or not vim.api.nvim_win_is_valid(state.win) then
         return false
     end
-    if vim.api.nvim_get_current_win() ~= state.win or vim.fn.mode():sub(1, 1) == "i" then
+    if vim.api.nvim_get_current_win() ~= state.win then
         return false
     end
-    vim.cmd("startinsert!")
+    enter_insert_when_settled(0)
     return true
 end
 

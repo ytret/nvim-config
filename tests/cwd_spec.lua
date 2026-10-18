@@ -405,6 +405,28 @@ describe("cwd prompt", function()
         vim.cmd("close")
     end)
 
+    it("enters insert mode without moving the cursor", function()
+        run_map("<leader>ca")
+        local st = set_prompt_line("~/dev")
+        vim.api.nvim_win_set_cursor(st.win, { 1, 2 })
+        local calls, orig = {}, vim.cmd
+        vim.cmd = function(cmd)
+            calls[#calls + 1] = cmd
+            return orig(cmd)
+        end
+        local ok, err = pcall(function()
+            assert.is_true(cwd._reenter_insert())
+            vim.wait(100, function() return #calls > 0 end)
+        end)
+        vim.cmd = orig
+        assert.is_true(ok, err)
+        assert.is_true(#calls > 0)
+        for _, cmd in ipairs(calls) do
+            assert.are.equal("startinsert", cmd)
+        end
+        assert.are.equal(2, vim.api.nvim_win_get_cursor(st.win)[2])
+    end)
+
     it("does not re-enter insert once the prompt is closed", function()
         run_map("<leader>ca")
         press("<Esc>")
