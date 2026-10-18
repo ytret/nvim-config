@@ -344,6 +344,15 @@ describe("cwd prompt", function()
         assert.are.equal(math.floor((vim.o.columns - cfg.width - 2) / 2), cfg.col)
     end)
 
+    it("keeps a fixed width while the text changes", function()
+        run_map("<leader>ca")
+        local before = vim.api.nvim_win_get_config(cwd._state().win).width
+        set_prompt_line("/usr/local/share/some/very/long/path")
+        press("<M-b>")
+        assert.are.equal(before, vim.api.nvim_win_get_config(cwd._state().win).width)
+        assert.are.equal(math.floor(vim.o.columns * 0.6), before)
+    end)
+
     it("is wide enough for the hint footer", function()
         run_map("<leader>cs")
         local cfg = vim.api.nvim_win_get_config(cwd._state().win)
@@ -359,6 +368,25 @@ describe("cwd prompt", function()
         local cfg = vim.api.nvim_win_get_config(cwd._state().win)
         assert.are.equal(math.floor((120 - cfg.width - 2) / 2), cfg.col)
         assert.are.equal(math.floor((40 - cfg.height - 2) / 2), cfg.row)
+    end)
+
+    describe("_head_elide", function()
+        it(
+            "keeps short text as is",
+            function() assert.are.equal("/usr/local", cwd._head_elide("/usr/local", 20)) end
+        )
+
+        it("keeps the tail of long text", function()
+            local out = cwd._head_elide("/Users/ytret/dev/ytret", 14)
+            assert.are.equal(14, #out)
+            assert.are.equal("dev/ytret", out:sub(-#"dev/ytret"))
+            assert.are.equal("\u{2026}", out:sub(1, #"\u{2026}"))
+        end)
+
+        it(
+            "never exceeds a tiny budget",
+            function() assert.are.equal("ret", cwd._head_elide("/Users/ytret/dev/ytret", 3)) end
+        )
     end)
 
     it("registers a WinEnter hook that re-enters insert mode", function()
@@ -488,7 +516,7 @@ describe("cwd prompt", function()
             open_with("/usr/lo")
             press("<Tab>")
             assert.are.equal("lo", calls[1].opts.query)
-            assert.are.equal(" /usr/ ", calls[1].opts.header)
+            assert.are.equal(" /usr/lo ", calls[1].opts.header)
         end)
 
         it("opens the whole level for an empty component", function()
@@ -517,7 +545,7 @@ describe("cwd prompt", function()
             vim.api.nvim_win_set_cursor(cwd._state().win, { 1, #"/usr/lo" })
             press("<Tab>")
             assert.are.equal("lo", calls[1].opts.query)
-            assert.are.equal(" /usr/ ", calls[1].opts.header)
+            assert.are.equal(" /usr/lo/locale ", calls[1].opts.header)
             accept("local")
             assert.are.equal("/usr/local/locale", prompt_line())
         end)
@@ -541,15 +569,47 @@ describe("cwd prompt", function()
             vim.fn.delete(empty, "rf")
         end)
 
-        it("opens a small centered window, not fullscreen", function()
+        it("docks the picker under the prompt, same width and left edge", function()
             open_with("/usr/")
+            local cfg = vim.api.nvim_win_get_config(cwd._state().win)
             press("<Tab>")
             local winopts = calls[1].opts.winopts
             assert.is_false(winopts.fullscreen)
-            assert.is_true(winopts.height < 1)
-            assert.is_true(winopts.width < 1)
-            assert.are.equal(0.5, winopts.row)
-            assert.are.equal(0.5, winopts.col)
+            assert.are.equal(cfg.width + 2, winopts.width)
+            assert.are.equal(cfg.col - 1, winopts.col)
+            assert.are.equal(cfg.row + 2, winopts.row)
+        end)
+
+        it("sizes the picker to 16 rows", function()
+            vim.o.lines = 60
+            open_with("/usr/")
+            press("<Tab>")
+            assert.are.equal(16 + 2, calls[1].opts.winopts.height)
+        end)
+
+        it("shrinks the picker when the terminal is short", function()
+            open_with("/usr/")
+            local st = cwd._state()
+            st.cfg.row = vim.o.lines - 8
+            press("<Tab>")
+            local winopts = calls[1].opts.winopts
+            assert.is_true(winopts.height < 16 + 2)
+            assert.is_true(winopts.row + winopts.height <= vim.o.lines)
+        end)
+
+        it("never runs the picker off the bottom of the screen", function()
+            open_with("/usr/")
+            local st = cwd._state()
+            st.cfg.row = vim.o.lines - 2
+            press("<Tab>")
+            local winopts = calls[1].opts.winopts
+            assert.is_true(winopts.row + winopts.height <= vim.o.lines)
+        end)
+
+        it("shows the whole path in the header", function()
+            open_with("/usr/lo")
+            press("<Tab>")
+            assert.are.equal(" /usr/lo ", calls[1].opts.header)
         end)
 
         it("binds <Tab> in the prompt", function()
