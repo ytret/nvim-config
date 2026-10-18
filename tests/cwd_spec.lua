@@ -267,14 +267,14 @@ describe("cwd prompt", function()
         assert.are.equal("/", prompt_line())
     end)
 
-    it("prefills ~/ for <leader>cs", function()
+    it("prefills the current dir for <leader>cs", function()
         run_map("<leader>cs")
-        assert.are.equal("~/", prompt_line())
+        assert.are.equal(tabs.get_global_cwd(), prompt_line())
     end)
 
-    it("prefills the global cwd for <leader>cd", function()
+    it("prefills ~/ for <leader>cd", function()
         run_map("<leader>cd")
-        assert.are.equal(tabs.get_global_cwd(), prompt_line())
+        assert.are.equal("~/", prompt_line())
     end)
 
     it("changes the global directory on <CR>", function()
