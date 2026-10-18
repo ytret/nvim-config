@@ -243,6 +243,8 @@ function M.setup(opts)
         fzf = {
             ["tab"] = "toggle",
             ["shift-tab"] = "toggle",
+            ["ctrl-d"] = "half-page-down",
+            ["ctrl-u"] = "half-page-up",
         },
     })
 
