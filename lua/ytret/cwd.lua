@@ -5,7 +5,9 @@ local tabs = require("ytret.tabs")
 -- State of the currently open prompt: { buf, win, cfg }. Nil when closed.
 local state
 
+-- Keep the hint footer fully visible in the smallest window.
 local FOOTER_HINT = " <CR> cd   <S-CR>/<C-e> tcd   <Esc> cancel "
+local MIN_WIDTH = #FOOTER_HINT + 2
 
 ---Expand a leading "~" using $HOME.
 ---@param path string
@@ -101,11 +103,35 @@ function M._chdir(dir, scope)
     return true
 end
 
+---Centered float config sized for `prefill`; recomputed on resize.
+---@param prefill string
+---@return table
+local function prompt_config(prefill)
+    local width = math.min(math.max(#prefill + 12, MIN_WIDTH), math.max(vim.o.columns - 4, 10))
+    local height = 1
+    return {
+        relative = "editor",
+        width = width,
+        height = height,
+        -- Center the whole box, border included.
+        row = math.max(math.floor((vim.o.lines - height - 2) / 2), 0),
+        col = math.max(math.floor((vim.o.columns - width - 2) / 2), 0),
+        style = "minimal",
+        border = "rounded",
+        title = " cd ",
+        footer = FOOTER_HINT,
+        footer_pos = "left",
+    }
+end
+
 local function close_prompt()
     if not state then
         return
     end
     local win = state.win
+    if state.resize_autocmd then
+        pcall(vim.api.nvim_del_autocmd, state.resize_autocmd)
+    end
     state = nil
     if vim.api.nvim_win_is_valid(win) then
         vim.cmd("stopinsert")
@@ -124,8 +150,19 @@ local function set_line(text, col)
 end
 
 local function set_footer(msg)
-    local cfg = vim.tbl_extend("force", state.cfg, { footer = msg, footer_pos = "left" })
-    vim.api.nvim_win_set_config(state.win, cfg)
+    state.cfg.footer = msg
+    vim.api.nvim_win_set_config(state.win, state.cfg)
+end
+
+---Re-apply the config (centering and width) after a terminal resize.
+local function recenter()
+    if not state or not vim.api.nvim_win_is_valid(state.win) then
+        return
+    end
+    local footer = state.cfg.footer
+    state.cfg = prompt_config(buffer_line())
+    state.cfg.footer = footer
+    vim.api.nvim_win_set_config(state.win, state.cfg)
 end
 
 local function accept(scope)
@@ -181,24 +218,14 @@ function M._open(prefill)
     vim.bo[buf].swapfile = false
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, { prefill })
 
-    local width = math.min(math.max(#prefill + 12, 24), math.max(vim.o.columns - 4, 10))
-    local cfg = {
-        relative = "editor",
-        anchor = "SW",
-        width = width,
-        height = 1,
-        row = math.max(vim.o.lines - 4, 1),
-        col = 2,
-        style = "minimal",
-        border = "rounded",
-        title = " cd ",
-        footer = FOOTER_HINT,
-        footer_pos = "left",
-    }
+    local cfg = prompt_config(prefill)
     local win = vim.api.nvim_open_win(buf, true, cfg)
     vim.wo[win].wrap = false
 
     state = { buf = buf, win = win, cfg = cfg }
+    state.resize_autocmd = vim.api.nvim_create_autocmd("VimResized", {
+        callback = recenter,
+    })
     set_maps(buf)
     vim.api.nvim_win_set_cursor(win, { 1, #prefill })
     vim.cmd("startinsert!")
