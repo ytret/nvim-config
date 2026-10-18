@@ -158,14 +158,20 @@ end)
 describe("cwd prompt", function()
     local saved_cwd
     local saved_tabs
+    local saved_cols
+    local saved_lines
 
     before_each(function()
         saved_cwd = vim.fn.getcwd()
         saved_tabs = vim.fn.tabpagenr("$")
+        saved_cols = vim.o.columns
+        saved_lines = vim.o.lines
     end)
 
     after_each(function()
         close_prompt()
+        vim.o.columns = saved_cols
+        vim.o.lines = saved_lines
         while vim.fn.tabpagenr("$") > saved_tabs do
             vim.cmd("tabclose")
         end
@@ -255,6 +261,30 @@ describe("cwd prompt", function()
         press("<Esc>", "n")
         assert.is_nil(cwd._state())
         assert.are.equal(realpath("/usr"), realpath(vim.fn.getcwd()))
+    end)
+
+    it("centers the prompt", function()
+        run_map("<leader>ca")
+        local cfg = vim.api.nvim_win_get_config(cwd._state().win)
+        assert.are.equal(math.floor((vim.o.lines - cfg.height - 2) / 2), cfg.row)
+        assert.are.equal(math.floor((vim.o.columns - cfg.width - 2) / 2), cfg.col)
+    end)
+
+    it("is wide enough for the hint footer", function()
+        run_map("<leader>cs")
+        local cfg = vim.api.nvim_win_get_config(cwd._state().win)
+        local hint = cfg.footer[1][1]
+        assert.is_true(cfg.width >= #hint)
+    end)
+
+    it("recenters on terminal resize", function()
+        run_map("<leader>ca")
+        vim.o.columns = 120
+        vim.o.lines = 40
+        vim.api.nvim_exec_autocmds("VimResized", {})
+        local cfg = vim.api.nvim_win_get_config(cwd._state().win)
+        assert.are.equal(math.floor((120 - cfg.width - 2) / 2), cfg.col)
+        assert.are.equal(math.floor((40 - cfg.height - 2) / 2), cfg.row)
     end)
 
     it("edits the path by component", function()
