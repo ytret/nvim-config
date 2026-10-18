@@ -10,6 +10,9 @@ local function close_prompt()
     if st and vim.api.nvim_win_is_valid(st.win) then
         vim.api.nvim_win_close(st.win, true)
     end
+    if st and st.backdrop and vim.api.nvim_win_is_valid(st.backdrop) then
+        vim.api.nvim_win_close(st.backdrop, true)
+    end
 end
 
 local function prompt_line()
@@ -370,6 +373,124 @@ describe("cwd prompt", function()
         assert.are.equal(math.floor((40 - cfg.height - 2) / 2), cfg.row)
     end)
 
+    describe("backdrop", function()
+        local saved_hls
+
+        ---Make the guard conditions hold without touching the real colorscheme.
+        local function define_hls()
+            vim.api.nvim_set_hl(0, "Normal", { bg = "#101010" })
+            vim.api.nvim_set_hl(0, "FzfLuaBackdrop", { bg = "Black" })
+            vim.api.nvim_set_hl(0, "FzfLuaNormal", { link = "Normal" })
+            vim.api.nvim_set_hl(0, "FzfLuaBorder", { link = "Normal" })
+        end
+
+        before_each(function()
+            saved_hls = vim.api.nvim_get_hl(0, { name = "Normal" })
+            package.loaded["fzf-lua.config"] = nil
+            define_hls()
+        end)
+
+        after_each(function()
+            package.loaded["fzf-lua.config"] = nil
+            vim.api.nvim_set_hl(0, "Normal", saved_hls)
+            for _, name in ipairs({ "FzfLuaBackdrop", "FzfLuaNormal", "FzfLuaBorder" }) do
+                pcall(vim.api.nvim_set_hl, 0, name, {})
+            end
+        end)
+
+        describe("_backdrop_blend", function()
+            it(
+                "falls back to fzf's default of 60",
+                function() assert.are.equal(60, cwd._backdrop_blend()) end
+            )
+
+            it("follows the value configured in fzf-lua", function()
+                package.loaded["fzf-lua.config"] = { defaults = { winopts = { backdrop = 40 } } }
+                assert.are.equal(40, cwd._backdrop_blend())
+            end)
+
+            it("is nil when fzf-lua's backdrop is disabled", function()
+                package.loaded["fzf-lua.config"] = { defaults = { winopts = { backdrop = false } } }
+                assert.is_nil(cwd._backdrop_blend())
+            end)
+        end)
+
+        describe("_backdrop_supported", function()
+            it(
+                "is true with the highlight group and an opaque Normal",
+                function() assert.is_true(cwd._backdrop_supported()) end
+            )
+
+            it("is false without fzf-lua's backdrop highlight group", function()
+                vim.api.nvim_set_hl(0, "FzfLuaBackdrop", {})
+                assert.is_false(cwd._backdrop_supported())
+            end)
+
+            it("is false when the background is transparent", function()
+                vim.api.nvim_set_hl(0, "Normal", {})
+                assert.is_false(cwd._backdrop_supported())
+            end)
+        end)
+
+        it("dims the screen while the prompt is open", function()
+            run_map("<leader>ca")
+            local win = cwd._state().backdrop
+            assert.is_true(vim.api.nvim_win_is_valid(win))
+            local cfg = vim.api.nvim_win_get_config(win)
+            assert.are.equal(0, cfg.row)
+            assert.are.equal(0, cfg.col)
+            assert.are.equal(vim.o.columns, cfg.width)
+            assert.are.equal(vim.o.lines, cfg.height)
+            assert.is_false(cfg.focusable)
+            assert.are.equal(60, vim.wo[win].winblend)
+            assert.are.equal("Normal:FzfLuaBackdrop", vim.wo[win].winhl)
+        end)
+
+        it("sits below the prompt", function()
+            run_map("<leader>ca")
+            local st = cwd._state()
+            local bar = vim.api.nvim_win_get_config(st.win).zindex
+            assert.is_true(vim.api.nvim_win_get_config(st.backdrop).zindex < bar)
+        end)
+
+        it("keeps the prompt focused", function()
+            run_map("<leader>ca")
+            assert.are.equal(cwd._state().win, vim.api.nvim_get_current_win())
+        end)
+
+        it("is not drawn when the background is transparent", function()
+            vim.api.nvim_set_hl(0, "Normal", {})
+            run_map("<leader>ca")
+            assert.is_nil(cwd._state().backdrop)
+        end)
+
+        it("resizes with the terminal", function()
+            run_map("<leader>ca")
+            vim.o.columns = 120
+            vim.o.lines = 40
+            vim.api.nvim_exec_autocmds("VimResized", {})
+            local cfg = vim.api.nvim_win_get_config(cwd._state().backdrop)
+            assert.are.equal(120, cfg.width)
+            assert.are.equal(40, cfg.height)
+        end)
+
+        it("is torn down with the prompt", function()
+            run_map("<leader>ca")
+            local st = cwd._state()
+            local win, buf = st.backdrop, vim.api.nvim_win_get_buf(st.backdrop)
+            press("<Esc>")
+            assert.is_false(vim.api.nvim_win_is_valid(win))
+            assert.is_false(vim.api.nvim_buf_is_valid(buf))
+        end)
+
+        it("paints the prompt with fzf-lua's own highlights", function()
+            run_map("<leader>ca")
+            local winhl = vim.wo[cwd._state().win].winhl
+            assert.is_truthy(winhl:find("Normal:FzfLuaNormal", 1, true))
+            assert.is_truthy(winhl:find("FloatBorder:FzfLuaBorder", 1, true))
+        end)
+    end)
+
     describe("_head_elide", function()
         it(
             "keeps short text as is",
@@ -575,6 +696,7 @@ describe("cwd prompt", function()
             press("<Tab>")
             local winopts = calls[1].opts.winopts
             assert.is_false(winopts.fullscreen)
+            assert.is_false(winopts.backdrop)
             assert.are.equal(cfg.width + 2, winopts.width)
             assert.are.equal(cfg.col, winopts.col)
             assert.are.equal(cfg.row + 2, winopts.row)
