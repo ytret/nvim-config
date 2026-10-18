@@ -285,7 +285,7 @@ end
 ---Picker geometry: the prompt's exact width and left edge, docked right below it.
 ---fzf-lua counts the border in `width`/`height`, while `row`/`col` are the
 ---footprint's top-left, so a picker under the prompt gets
----`row = prompt.row + 2` (1 content row + 1 bottom border), `col = prompt.col - 1`.
+---`row = prompt.row + 2` (1 content row + 1 bottom border), `col = prompt.col`.
 ---@return table
 function M._picker_winopts()
     local cfg = state.cfg
@@ -300,7 +300,7 @@ function M._picker_winopts()
         height = total,
         -- Normally right below the prompt; pulled up only if that would not fit.
         row = math.min(cfg.row + 2, math.max(vim.o.lines - vim.o.cmdheight - total, 0)),
-        col = math.max(cfg.col - 1, 0),
+        col = math.max(cfg.col, 0),
     }
 end
 

@@ -576,7 +576,7 @@ describe("cwd prompt", function()
             local winopts = calls[1].opts.winopts
             assert.is_false(winopts.fullscreen)
             assert.are.equal(cfg.width + 2, winopts.width)
-            assert.are.equal(cfg.col - 1, winopts.col)
+            assert.are.equal(cfg.col, winopts.col)
             assert.are.equal(cfg.row + 2, winopts.row)
         end)
 
