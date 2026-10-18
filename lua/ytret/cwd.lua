@@ -10,6 +10,8 @@ local FOOTER_HINT = " <CR> cd   <S-CR>/<C-e> tcd   <Esc> cancel "
 local MIN_WIDTH = #FOOTER_HINT + 2
 -- Preferred number of list rows in the directory picker.
 local PICKER_ROWS = 16
+-- fzf-lua drops its backdrop two zindexes below the pickers (50 - 2).
+local BACKDROP_ZINDEX = 48
 
 ---Expand a leading "~" using $HOME.
 ---@param path string
@@ -158,6 +160,70 @@ function M._chdir(dir, scope)
     return true
 end
 
+---fzf-lua's own guards for drawing a backdrop: no highlight group, or a
+---transparent `Normal`, means there is nothing to dim.
+---@return boolean
+function M._backdrop_supported()
+    if vim.api.nvim_get_hl(0, { name = "Normal" }).bg == nil then
+        return false
+    end
+    return next(vim.api.nvim_get_hl(0, { name = "FzfLuaBackdrop" }) or {}) ~= nil
+end
+
+---Blend level fzf-lua uses for its backdrop, or nil when it is disabled.
+---@return integer|nil
+function M._backdrop_blend()
+    local ok, config = pcall(require, "fzf-lua.config")
+    if not ok or type(config) ~= "table" or not config.defaults then
+        return 60
+    end
+    local blend = config.defaults.winopts and config.defaults.winopts.backdrop
+    if blend == false then
+        return nil
+    end
+    if type(blend) ~= "number" then
+        blend = 60
+    end
+    return blend
+end
+
+---Full-screen dimming float, mirroring fzf-lua/win/backdrop.lua so the background
+---looks the same before and while the picker is open.
+---@return integer|nil win
+local function open_backdrop()
+    local blend = M._backdrop_blend()
+    if not blend or not M._backdrop_supported() then
+        return nil
+    end
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.bo[buf].swapfile = false
+    vim.bo[buf].bufhidden = "wipe"
+    local win = vim.api.nvim_open_win(buf, false, {
+        relative = "editor",
+        width = vim.o.columns,
+        height = vim.o.lines,
+        row = 0,
+        col = 0,
+        style = "minimal",
+        border = "none",
+        focusable = false,
+        zindex = BACKDROP_ZINDEX,
+    })
+    vim.wo[win].winhl = "Normal:FzfLuaBackdrop"
+    vim.wo[win].winblend = blend
+    return win
+end
+
+---Paint the prompt like an fzf-lua window, so the bar keeps its shade when the
+---picker (which uses these groups) opens over the shared backdrop.
+---@param win integer
+function M._apply_bar_hl(win)
+    if vim.fn.hlexists("FzfLuaNormal") == 0 then
+        return
+    end
+    vim.wo[win].winhl = "Normal:FzfLuaNormal,NormalFloat:FzfLuaNormal,FloatBorder:FzfLuaBorder"
+end
+
 ---The prompt's content width: a fixed 60% of the screen, never narrower than the
 ---hint footer. Fixed so the bar does not resize (and shift) while typing.
 ---@return integer
@@ -191,7 +257,7 @@ local function close_prompt()
     if not state then
         return
     end
-    local win = state.win
+    local win, backdrop = state.win, state.backdrop
     for _, id in ipairs(state.autocmds or {}) do
         pcall(vim.api.nvim_del_autocmd, id)
     end
@@ -199,6 +265,9 @@ local function close_prompt()
     if vim.api.nvim_win_is_valid(win) then
         vim.cmd("stopinsert")
         vim.api.nvim_win_close(win, true)
+    end
+    if backdrop and vim.api.nvim_win_is_valid(backdrop) then
+        vim.api.nvim_win_close(backdrop, true)
     end
 end
 
@@ -226,6 +295,15 @@ local function recenter()
     state.cfg = prompt_config()
     state.cfg.footer = footer
     vim.api.nvim_win_set_config(state.win, state.cfg)
+    if state.backdrop and vim.api.nvim_win_is_valid(state.backdrop) then
+        vim.api.nvim_win_set_config(state.backdrop, {
+            relative = "editor",
+            width = vim.o.columns,
+            height = vim.o.lines,
+            row = 0,
+            col = 0,
+        })
+    end
 end
 
 local function accept(scope)
@@ -296,6 +374,9 @@ function M._picker_winopts()
     return {
         -- The user config turns fullscreen on for every picker; opt out here.
         fullscreen = false,
+        -- The prompt already dims the background; a second layer would double it
+        -- and would tear down on close, flashing the screen back to full brightness.
+        backdrop = false,
         width = cfg.width + 2,
         height = total,
         -- Normally right below the prompt; pulled up only if that would not fit.
@@ -391,10 +472,12 @@ function M._open(prefill)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, { prefill })
 
     local cfg = prompt_config()
+    local backdrop = open_backdrop()
     local win = vim.api.nvim_open_win(buf, true, cfg)
     vim.wo[win].wrap = false
+    M._apply_bar_hl(win)
 
-    state = { buf = buf, win = win, cfg = cfg }
+    state = { buf = buf, win = win, cfg = cfg, backdrop = backdrop }
     state.autocmds = {
         vim.api.nvim_create_autocmd("VimResized", { callback = recenter }),
         -- Leaving the prompt (the directory picker, another window) drops insert
