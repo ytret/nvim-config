@@ -39,6 +39,33 @@ local function apply_winopts(opts, state)
     opts.winopts.preview = vim.tbl_deep_extend("force", opts.winopts.preview or {}, state.preview)
 end
 
+---Restart through fzf-lua so colors, live reloads and filter actions stay intact.
+local function toggle_grep_sort(_, action_opts)
+    local args = vim.deepcopy(action_opts.__call_opts or {})
+    args.resume = true
+    args._path_sorted = not action_opts._path_sorted
+    args._unsorted_rg_opts = action_opts._unsorted_rg_opts or action_opts.rg_opts
+    -- Default rg_opts ends in -e: its next argument must remain the search pattern.
+    args.rg_opts = (args._path_sorted and "--sort=path " or "") .. args._unsorted_rg_opts
+    args.fzf_opts = args.fzf_opts or {}
+    args.fzf_opts["--no-sort"] = args._path_sorted
+    apply_winopts(args, siphon_winopts())
+    args.winopts = args.winopts or {}
+    -- Start from the plain title: fzf-lua will rebuild h/i/f flags on restart.
+    local title = action_opts._unsorted_title or action_opts.winopts.title
+    if type(title) == "table" then
+        title = title[1][1]
+    end
+    args._unsorted_title = title or "Grep"
+    args.winopts.title = args._path_sorted
+            and {
+                { args._unsorted_title, action_opts.hls.title },
+                { " s ", action_opts.hls.title_flags },
+            }
+        or args._unsorted_title
+    action_opts.__call_fn(args)
+end
+
 local function has_real_target(selected, action_opts)
     if not selected or not selected[1] or selected[1] == "" then
         return false
@@ -209,6 +236,7 @@ function M.setup(opts)
         actions = {
             ["default"] = with_picked_window(fzf_actions.file_edit),
             ["ctrl-t"] = with_picked_tab(fzf_actions.file_edit),
+            ["alt-s"] = { fn = toggle_grep_sort, reuse = true, desc = "toggle path sorting" },
         },
     })
     opts.lsp = vim.tbl_deep_extend("force", opts.lsp or {}, {
@@ -249,6 +277,8 @@ function M.setup(opts)
     })
     opts.actions = vim.tbl_deep_extend("force", opts.actions or {}, {
         files = {
+            -- Global action tables replace defaults unless inheritance is explicit.
+            [1] = true,
             ["alt-f"] = false,
         },
     })

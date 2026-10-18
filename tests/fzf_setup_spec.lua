@@ -160,6 +160,80 @@ describe("setup winopts", function()
         assert.equals("down:50%", opts.winopts.preview.vertical)
     end)
 
+    it("toggles native grep path sorting without replacing its reload bindings", function()
+        local opts = fzf_setup.setup({})
+        local action = opts.grep.actions["alt-s"]
+        local reopened
+        local original = {
+            cwd = "/usr",
+            hidden = true,
+            no_ignore = false,
+            search_paths = { "example.lua" },
+            actions = { ["ctrl-g"] = function() end },
+        }
+        local resolved = {
+            rg_opts = "--color=always --line-number --column -e",
+            hls = { title = "FzfLuaTitle", title_flags = "FzfLuaTitleFlags" },
+            winopts = { title = { { "Grep" }, { " h " } } },
+            __call_opts = original,
+            __call_fn = function(args) reopened = args end,
+        }
+        action.fn({}, resolved)
+        assert.is_true(action.reuse)
+        assert.is_true(reopened.resume)
+        assert.is_true(reopened._path_sorted)
+        assert.equals("--sort=path " .. resolved.rg_opts, reopened.rg_opts)
+        -- Exercise the trailing -e used by fzf-lua's real defaults, not just option strings.
+        local dir = vim.fn.tempname()
+        vim.fn.mkdir(dir, "p")
+        vim.fn.writefile({ "fo" }, dir .. "/z.txt")
+        vim.fn.writefile({ "fo" }, dir .. "/a.txt")
+        local output =
+            vim.fn.system("rg " .. reopened.rg_opts .. " 'fo' " .. vim.fn.shellescape(dir))
+        local status = vim.v.shell_error
+        vim.fn.delete(dir, "rf")
+        assert.equals(0, status)
+        local plain = output:gsub("\27%[[%d;]*m", "")
+        assert.is_truthy(plain:find("a.txt:1:1:fo", 1, true))
+        assert.is_truthy(plain:find("z.txt:1:1:fo", 1, true))
+        assert.is_true(plain:find("a.txt", 1, true) < plain:find("z.txt", 1, true))
+        assert.is_truthy(output:find("\27[", 1, true))
+        assert.is_true(reopened.fzf_opts["--no-sort"])
+        assert.same({
+            { "Grep", "FzfLuaTitle" },
+            { " s ", "FzfLuaTitleFlags" },
+        }, reopened.winopts.title)
+        assert.is_true(reopened.hidden)
+        assert.is_false(reopened.no_ignore)
+        assert.same(original.search_paths, reopened.search_paths)
+        assert.equals(original.actions["ctrl-g"], reopened.actions["ctrl-g"])
+        assert.is_nil(opts.grep.keymap)
+        assert.is_nil(opts.grep.fzf_opts["--no-sort"])
+        assert.is_true(opts.actions.files[1])
+        assert.is_false(opts.actions.files["alt-f"])
+
+        -- Simulate a native Alt-I toggle/restart while sorting is enabled.
+        reopened.no_ignore = true
+        local sorted = vim.deepcopy(reopened)
+        sorted.__call_opts = vim.deepcopy(reopened)
+        sorted.__call_fn = resolved.__call_fn
+        sorted.hls = resolved.hls
+        sorted.winopts.title = {
+            { "Grep", "FzfLuaTitle" },
+            { " s ", "FzfLuaTitleFlags" },
+            { " h ", "FzfLuaTitleFlags" },
+            { " i ", "FzfLuaTitleFlags" },
+        }
+        action.fn({}, sorted)
+        assert.is_false(reopened._path_sorted)
+        assert.is_false(reopened.fzf_opts["--no-sort"])
+        assert.equals(resolved.rg_opts, reopened.rg_opts)
+        assert.equals("Grep", reopened.winopts.title)
+        assert.is_true(reopened.no_ignore)
+        assert.is_true(reopened.hidden)
+        assert.is_nil(original.rg_opts)
+    end)
+
     it("preserves existing user winopts", function()
         local opts = fzf_setup.setup({ winopts = { border = "none" } })
         assert.equals("none", opts.winopts.border)
