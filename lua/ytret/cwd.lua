@@ -80,6 +80,59 @@ end
 ---@return integer
 function M._next_boundary(line, col) return line:find("/", col + 1, true) or #line end
 
+---Split the prompt line at the cursor into base dir and component.
+---@param line string
+---@param col integer 0-based cursor offset
+---@return string base dir as typed ("", "~/", "/a/b/")
+---@return string partial component under the cursor
+---@return integer start 0-based offset where the component starts
+---@return integer stop 0-based offset (exclusive) where the component ends
+function M._split_component(line, col)
+    local left = line:sub(1, col)
+    local start = left:match("^.*()/") or 0
+    local after = line:sub(col + 1):find("/", 1, true)
+    local stop = after and col + after - 1 or #line
+    return line:sub(1, start), line:sub(start + 1, stop), start, stop
+end
+
+---Resolve a base dir as typed ("" means the current directory).
+---@param base string
+---@return string|nil dir
+---@return string|nil err
+function M._resolve_base(base)
+    local raw = base == "" and "." or base
+    local dir = vim.fs.normalize(vim.fn.fnamemodify(expand_home(raw), ":p"))
+    if vim.fn.isdirectory(dir) == 1 then
+        return dir
+    end
+    if vim.fn.filereadable(dir) == 1 then
+        return nil, "Not a directory: " .. dir
+    end
+    return nil, "No such directory: " .. dir
+end
+
+---Sorted names of the subdirectories of `dir`.
+---@param dir string
+---@return string[]|nil names
+---@return string|nil err
+function M._dir_candidates(dir)
+    if vim.fn.isdirectory(dir) == 0 then
+        return nil, "No such directory: " .. dir
+    end
+    local ok, entries = pcall(vim.fn.readdir, dir)
+    if not ok or type(entries) ~= "table" then
+        return nil, "Cannot read directory: " .. dir
+    end
+    local names = {}
+    for _, name in ipairs(entries) do
+        if vim.fn.isdirectory(dir .. "/" .. name) == 1 then
+            names[#names + 1] = name
+        end
+    end
+    table.sort(names)
+    return names
+end
+
 ---Change the working directory.
 ---@param dir string must be an existing directory
 ---@param scope string "global" (:cd) or "tabpage" (:tcd)
@@ -178,6 +231,75 @@ local function accept(scope)
     M._chdir(dir, scope)
 end
 
+---Put `name` into the prompt in place of the component at [start, stop].
+---@param line string prompt line the picker was opened from
+---@param name string chosen directory name
+---@param start integer
+---@param stop integer
+local function insert_component(line, name, start, stop)
+    if not state then
+        return
+    end
+    local base = line:sub(1, start)
+    local rest = line:sub(stop + 1)
+    if rest:sub(1, 1) == "/" then
+        rest = rest:sub(2)
+    end
+    if not vim.api.nvim_win_is_valid(state.win) then
+        return
+    end
+    pcall(vim.api.nvim_set_current_win, state.win)
+    set_line(base .. name .. "/" .. rest, #base + #name + 1)
+    recenter()
+    if vim.api.nvim_get_current_win() == state.win then
+        vim.cmd("startinsert!")
+    end
+end
+
+---Complete the path component under the cursor with a directory picker.
+function M._pick_component()
+    if not state then
+        return
+    end
+    local line, col = buffer_line(), vim.api.nvim_win_get_cursor(state.win)[2]
+    local base, partial, start, stop = M._split_component(line, col)
+    local dir, err = M._resolve_base(base)
+    if not dir then
+        set_footer(" " .. err .. " ")
+        return
+    end
+    local names, derr = M._dir_candidates(dir)
+    if not names then
+        set_footer(" " .. derr .. " ")
+        return
+    end
+    if #names == 0 then
+        set_footer(" No subdirectories: " .. dir .. " ")
+        return
+    end
+    local ok, fzf = pcall(require, "fzf-lua")
+    if not ok then
+        set_footer(" fzf-lua not available ")
+        return
+    end
+    fzf.fzf_exec(names, {
+        prompt = "cd> ",
+        query = partial,
+        header = " " .. (base == "" and dir .. "/" or base) .. " ",
+        winopts = { height = 0.35, width = 0.6 },
+        previewer = false,
+        actions = {
+            ["default"] = function(selected)
+                local name = selected and selected[1]
+                if not name or name == "" then
+                    return
+                end
+                vim.schedule(function() insert_component(line, name, start, stop) end)
+            end,
+        },
+    })
+end
+
 local function set_maps(buf)
     local function imap(lhs, fn) vim.keymap.set("i", lhs, fn, { buffer = buf, nowait = true }) end
     imap("<CR>", function() accept("global") end)
@@ -199,6 +321,7 @@ local function set_maps(buf)
         local line, col = buffer_line(), vim.api.nvim_win_get_cursor(state.win)[2]
         set_line(line, M._next_boundary(line, col))
     end)
+    imap("<Tab>", M._pick_component)
     imap("<Esc>", close_prompt)
     imap("<C-c>", close_prompt)
     -- Fallbacks in case the prompt is not in insert mode.
