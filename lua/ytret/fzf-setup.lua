@@ -239,6 +239,12 @@ function M.setup(opts)
             ["ctrl-t"] = with_picked_tab(fzf_actions.file_edit),
         },
     })
+    opts.keymap = vim.tbl_deep_extend("force", opts.keymap or {}, {
+        fzf = {
+            ["tab"] = "toggle",
+            ["shift-tab"] = "toggle",
+        },
+    })
 
     return opts
 end
