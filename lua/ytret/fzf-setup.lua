@@ -18,11 +18,14 @@ local function siphon_winopts()
         return nil
     end
     local layout = w:normalize_preview_layout()
+    local preview = vim.deepcopy(w.winopts.preview)
+    local direction = (layout.pos == "up" or layout.pos == "down") and "vertical" or "horizontal"
+    -- Preserve flex and its threshold, updating only the active orientation's position/size.
+    preview[direction] = layout.str
+    preview.hidden = not not w.preview_hidden
     return {
         fullscreen = not not w.fullscreen,
-        preview_pos = layout.pos,
-        preview_size = layout.size,
-        preview_hidden = not not w.preview_hidden,
+        preview = preview,
     }
 end
 
@@ -33,22 +36,7 @@ local function apply_winopts(opts, state)
     end
     opts.winopts = opts.winopts or {}
     opts.winopts.fullscreen = state.fullscreen
-    if state.preview_pos then
-        opts.winopts.preview = opts.winopts.preview or {}
-        -- Use the normalized preview size string, e.g. "50%"
-        local size_str = math.floor(state.preview_size * 100) .. "%"
-        if state.preview_pos == "up" or state.preview_pos == "down" then
-            opts.winopts.preview.layout = "horizontal"
-            opts.winopts.preview.horizontal = state.preview_pos .. ":" .. size_str
-        else
-            opts.winopts.preview.layout = "vertical"
-            opts.winopts.preview.vertical = state.preview_pos .. ":" .. size_str
-        end
-    end
-    if state.preview_hidden ~= nil then
-        opts.winopts.preview = opts.winopts.preview or {}
-        opts.winopts.preview.hidden = state.preview_hidden
-    end
+    opts.winopts.preview = vim.tbl_deep_extend("force", opts.winopts.preview or {}, state.preview)
 end
 
 local function has_real_target(selected, action_opts)
@@ -154,12 +142,14 @@ end
 function M.setup(opts)
     opts = opts or {}
     opts.fzf_colors = true
-    -- Fullscreen windows with the preview taking exactly half the width
+    -- Fullscreen windows with equal panes, stacked when the terminal is narrow
     opts.winopts = vim.tbl_deep_extend("force", opts.winopts or {}, {
         fullscreen = true,
         preview = {
-            layout = "horizontal",
+            layout = "flex",
+            flip_columns = 120,
             horizontal = "right:50%",
+            vertical = "down:50%",
         },
     })
     opts.files = vim.tbl_deep_extend("force", opts.files or {}, {

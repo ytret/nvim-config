@@ -152,16 +152,122 @@ describe("setup winopts", function()
         assert.is_true(opts.winopts.fullscreen)
     end)
 
-    it("puts the preview on the right at 50% of the width", function()
+    it("adapts equal-sized preview panes to the available width", function()
         local opts = fzf_setup.setup({})
-        assert.equals("horizontal", opts.winopts.preview.layout)
+        assert.equals("flex", opts.winopts.preview.layout)
+        assert.equals(120, opts.winopts.preview.flip_columns)
         assert.equals("right:50%", opts.winopts.preview.horizontal)
+        assert.equals("down:50%", opts.winopts.preview.vertical)
     end)
 
     it("preserves existing user winopts", function()
         local opts = fzf_setup.setup({ winopts = { border = "none" } })
         assert.equals("none", opts.winopts.border)
         assert.is_true(opts.winopts.fullscreen)
+        assert.equals("flex", opts.winopts.preview.layout)
         assert.equals("right:50%", opts.winopts.preview.horizontal)
+    end)
+end)
+
+describe("files and grep TUI state", function()
+    local grep_opts, files_opts, window, opts
+
+    local function set_window(pos, size, fullscreen, hidden)
+        window = {
+            fullscreen = fullscreen,
+            preview_hidden = hidden,
+            winopts = { preview = vim.deepcopy(opts.winopts.preview) },
+            normalize_preview_layout = function()
+                return { pos = pos, size = size, str = pos .. ":" .. size * 100 .. "%" }
+            end,
+        }
+    end
+
+    before_each(function()
+        opts = fzf_setup.setup({})
+        grep_opts, files_opts = nil, nil
+        mock_win.__SELF = function() return window end
+        mock_fzf_lua.live_grep = function(args) grep_opts = args end
+        mock_fzf_lua.files = function(args) files_opts = args end
+        set_window("right", 0.5, true, false)
+    end)
+
+    after_each(function()
+        mock_win.__SELF = function() end
+        mock_fzf_lua.live_grep = function() end
+        mock_fzf_lua.files = function() end
+    end)
+
+    for _, selection in ipairs({ {}, { "example.lua" } }) do
+        local scope = #selection == 0 and "unscoped" or "scoped"
+        it("preserves flex across the " .. scope .. " files/grep round trip", function()
+            opts.files.actions["ctrl-g"](selection, {
+                cwd = "/usr",
+                last_query = "original query",
+                winopts = vim.deepcopy(opts.winopts),
+            })
+
+            assert.equals("flex", grep_opts.winopts.preview.layout)
+            assert.equals(120, grep_opts.winopts.preview.flip_columns)
+            assert.equals("right:50%", grep_opts.winopts.preview.horizontal)
+            assert.equals("down:50%", grep_opts.winopts.preview.vertical)
+            assert.is_true(grep_opts.winopts.fullscreen)
+            assert.is_false(grep_opts.winopts.preview.hidden)
+            if #selection > 0 then
+                assert.same(selection, grep_opts.search_paths)
+            end
+
+            -- Simulate resizing to a narrow terminal and toggling fullscreen/visibility.
+            set_window("down", 0.6, false, true)
+            grep_opts.actions["ctrl-g"]()
+
+            assert.equals("flex", files_opts.winopts.preview.layout)
+            assert.equals(120, files_opts.winopts.preview.flip_columns)
+            assert.equals("right:50%", files_opts.winopts.preview.horizontal)
+            assert.equals("down:60%", files_opts.winopts.preview.vertical)
+            assert.is_false(files_opts.winopts.fullscreen)
+            assert.is_true(files_opts.winopts.preview.hidden)
+            assert.equals("original query", files_opts.query)
+            assert.equals("Files", files_opts.winopts.title)
+        end)
+    end
+
+    for _, pos in ipairs({ "up", "down", "left", "right" }) do
+        it("restores " .. pos .. " in the correct flex orientation", function()
+            set_window(pos, 0.6, false, false)
+            opts.files.actions["ctrl-g"]({}, { winopts = vim.deepcopy(opts.winopts) })
+
+            local preview = grep_opts.winopts.preview
+            assert.equals("flex", preview.layout)
+            if pos == "up" or pos == "down" then
+                assert.equals(pos .. ":60%", preview.vertical)
+                assert.equals("right:50%", preview.horizontal)
+            else
+                assert.equals(pos .. ":60%", preview.horizontal)
+                assert.equals("down:50%", preview.vertical)
+            end
+            assert.is_false(grep_opts.winopts.fullscreen)
+            assert.is_false(preview.hidden)
+            -- The snapshot must not mutate the source window's preview options.
+            assert.same(opts.winopts.preview, window.winopts.preview)
+        end)
+    end
+
+    it("clears hidden and fullscreen state when returning to files", function()
+        set_window("right", 0.5, true, true)
+        local original = vim.deepcopy(opts.winopts)
+        original.preview.hidden = true
+        opts.files.actions["ctrl-g"]({}, { winopts = original })
+
+        set_window("right", 0.5, false, false)
+        grep_opts.actions["ctrl-g"]()
+        assert.is_false(files_opts.winopts.fullscreen)
+        assert.is_false(files_opts.winopts.preview.hidden)
+    end)
+
+    it("leaves defaults untouched when no fzf window is available", function()
+        window = nil
+        opts.files.actions["ctrl-g"]({}, { cwd = "/usr" })
+        assert.is_nil(grep_opts.winopts)
     end)
 end)
