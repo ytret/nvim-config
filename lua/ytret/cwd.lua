@@ -532,7 +532,7 @@ end
 function M._state() return state end
 
 vim.keymap.set("n", "<leader>ca", function() M._open("/") end, { desc = "cd: prompt from /" })
-vim.keymap.set("n", "<leader>cs", function() M._open(tabs.get_global_cwd()) end, {
+vim.keymap.set("n", "<leader>cs", function() M._open(tabs.get_global_cwd() .. "/") end, {
     desc = "cd: prompt from project dir",
 })
 vim.keymap.set("n", "<leader>cd", function() M._open("~/") end, { desc = "cd: prompt from ~/" })
