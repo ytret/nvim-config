@@ -431,32 +431,42 @@ function M._pick_component()
 end
 
 local function set_maps(buf)
-    local function imap(lhs, fn) vim.keymap.set("i", lhs, fn, { buffer = buf, nowait = true }) end
-    imap("<CR>", function() accept("global") end)
-    imap("<S-CR>", function() accept("tabpage") end)
-    imap("<C-e>", function() accept("tabpage") end)
+    local function imap(lhs, fn, desc)
+        vim.keymap.set("i", lhs, fn, { buffer = buf, nowait = true, desc = desc })
+    end
+    imap("<CR>", function() accept("global") end, "Set global working directory")
+    imap("<S-CR>", function() accept("tabpage") end, "Set tab working directory")
+    imap("<C-e>", function() accept("tabpage") end, "Set tab working directory")
     imap("<C-w>", function()
         local line, col = buffer_line(), vim.api.nvim_win_get_cursor(state.win)[2]
         set_line(M._kill_component(line, col))
-    end)
+    end, "Delete previous path component")
     imap("<M-BS>", function()
         local line, col = buffer_line(), vim.api.nvim_win_get_cursor(state.win)[2]
         set_line(M._kill_component(line, col))
-    end)
+    end, "Delete previous path component")
     imap("<M-b>", function()
         local line, col = buffer_line(), vim.api.nvim_win_get_cursor(state.win)[2]
         set_line(line, M._prev_boundary(line, col))
-    end)
+    end, "Previous path component")
     imap("<M-f>", function()
         local line, col = buffer_line(), vim.api.nvim_win_get_cursor(state.win)[2]
         set_line(line, M._next_boundary(line, col))
-    end)
-    imap("<Tab>", M._pick_component)
-    imap("<Esc>", close_prompt)
-    imap("<C-c>", close_prompt)
+    end, "Next path component")
+    imap("<Tab>", M._pick_component, "Pick path component")
+    imap("<Esc>", close_prompt, "Cancel directory prompt")
+    imap("<C-c>", close_prompt, "Cancel directory prompt")
     -- Fallbacks in case the prompt is not in insert mode.
-    vim.keymap.set("n", "<CR>", function() accept("global") end, { buffer = buf, nowait = true })
-    vim.keymap.set("n", "<Esc>", close_prompt, { buffer = buf, nowait = true })
+    vim.keymap.set("n", "<CR>", function() accept("global") end, {
+        buffer = buf,
+        nowait = true,
+        desc = "Set global working directory",
+    })
+    vim.keymap.set("n", "<Esc>", close_prompt, {
+        buffer = buf,
+        nowait = true,
+        desc = "Cancel directory prompt",
+    })
 end
 
 ---Open the path prompt, prefilled with `prefill`.

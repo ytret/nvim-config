@@ -60,9 +60,7 @@ end
 
 -- Exposed read-only so tests can assert against the tracked global cwd
 -- without relying on the unreliable getcwd(-1).
-function M.get_global_cwd()
-    return global_cwd
-end
+function M.get_global_cwd() return global_cwd end
 
 vim.api.nvim_create_autocmd("DirChanged", {
     pattern = "global",
@@ -162,9 +160,14 @@ local function close_tab()
 end
 
 -- Open/close a tab
-vim.keymap.set("n", "<leader>tt", function() open_current_buffer_in_new_tab(false) end)
-vim.keymap.set("n", "<leader>tq", close_tab)
-vim.keymap.set("n", "<leader>tc", close_tab)
+vim.keymap.set(
+    "n",
+    "<leader>tt",
+    function() open_current_buffer_in_new_tab(false) end,
+    { desc = "Open current buffer in new tab" }
+)
+vim.keymap.set("n", "<leader>tq", close_tab, { desc = "Close tab" })
+vim.keymap.set("n", "<leader>tc", close_tab, { desc = "Close tab" })
 
 -- Move current tab to a chosen position
 local function prompt_move_tab()
@@ -195,7 +198,7 @@ local function prompt_move_tab()
     end
 end
 
-vim.keymap.set("n", "<leader>tm", prompt_move_tab)
+vim.keymap.set("n", "<leader>tm", prompt_move_tab, { desc = "Move tab to chosen position" })
 
 -- Move current tab left/right. Extended keyboard reporting preserves Shift
 -- on braces; retain the legacy forms for terminals that omit that modifier.
@@ -204,7 +207,7 @@ for _, key in ipairs({ "<M-{>", "<M-S-{>" }) do
         if vim.fn.tabpagenr() > 1 then
             vim.cmd("tabmove -1")
         end
-    end)
+    end, { desc = "Move tab left" })
 end
 
 for _, key in ipairs({ "<M-}>", "<M-S-}>" }) do
@@ -212,29 +215,29 @@ for _, key in ipairs({ "<M-}>", "<M-S-}>" }) do
         if vim.fn.tabpagenr() < vim.fn.tabpagenr("$") then
             vim.cmd("tabmove +1")
         end
-    end)
+    end, { desc = "Move tab right" })
 end
 
 -- Open a new tab at the last, after, or before the active tab
 vim.keymap.set("n", "<leader>tn", function()
     vim.cmd.tabnew()
     vim.cmd("tabmove")
-end)
+end, { desc = "New tab at end" })
 vim.keymap.set("n", "<leader>ta", function()
     local cur = vim.fn.tabpagenr()
     vim.cmd.tabnew()
     vim.cmd.tabmove(tostring(cur))
-end)
+end, { desc = "New tab after current" })
 vim.keymap.set("n", "<leader>tb", function()
     local cur = vim.fn.tabpagenr()
     vim.cmd.tabnew()
     vim.cmd.tabmove(tostring(cur - 1))
-end)
+end, { desc = "New tab before current" })
 
 -- Go to prev/next/last tab
-vim.keymap.set("n", "<M-[>", vim.cmd.tabprev)
-vim.keymap.set("n", "<M-]>", vim.cmd.tabnext)
-vim.keymap.set("n", "<leader>tl", "g<tab>")
+vim.keymap.set("n", "<M-[>", vim.cmd.tabprev, { desc = "Previous tab" })
+vim.keymap.set("n", "<M-]>", vim.cmd.tabnext, { desc = "Next tab" })
+vim.keymap.set("n", "<leader>tl", "g<tab>", { desc = "Last visited tab" })
 
 -- Go to tab N
 local function gen_tabn(num)
@@ -247,15 +250,15 @@ local function gen_tabn(num)
         end
     end
 end
-vim.keymap.set("n", "<M-1>", gen_tabn(1))
-vim.keymap.set("n", "<M-2>", gen_tabn(2))
-vim.keymap.set("n", "<M-3>", gen_tabn(3))
-vim.keymap.set("n", "<M-4>", gen_tabn(4))
-vim.keymap.set("n", "<M-5>", gen_tabn(5))
-vim.keymap.set("n", "<M-6>", gen_tabn(6))
-vim.keymap.set("n", "<M-7>", gen_tabn(7))
-vim.keymap.set("n", "<M-8>", gen_tabn(8))
-vim.keymap.set("n", "<M-9>", gen_tabn(9))
+vim.keymap.set("n", "<M-1>", gen_tabn(1), { desc = "Go to tab 1" })
+vim.keymap.set("n", "<M-2>", gen_tabn(2), { desc = "Go to tab 2" })
+vim.keymap.set("n", "<M-3>", gen_tabn(3), { desc = "Go to tab 3" })
+vim.keymap.set("n", "<M-4>", gen_tabn(4), { desc = "Go to tab 4" })
+vim.keymap.set("n", "<M-5>", gen_tabn(5), { desc = "Go to tab 5" })
+vim.keymap.set("n", "<M-6>", gen_tabn(6), { desc = "Go to tab 6" })
+vim.keymap.set("n", "<M-7>", gen_tabn(7), { desc = "Go to tab 7" })
+vim.keymap.set("n", "<M-8>", gen_tabn(8), { desc = "Go to tab 8" })
+vim.keymap.set("n", "<M-9>", gen_tabn(9), { desc = "Go to tab 9" })
 
 -- Switch to a tab by number, prompting for the tab number. Works for any
 -- number of tabs (unlike <M-1>..<M-9>, which are limited to single digits).
@@ -273,7 +276,7 @@ local function prompt_switch_tab()
     end
 end
 
-vim.keymap.set("n", "<M-;>", prompt_switch_tab)
+vim.keymap.set("n", "<M-;>", prompt_switch_tab, { desc = "Go to chosen tab" })
 
 -- Switch the current tab's local working directory (:tcd) to a registered
 -- cwd group by its mnemonic Latin key (A = α, B = β, G = γ, ...).
@@ -305,9 +308,16 @@ end
 local function switch_to_global_cwd() vim.cmd("tcd " .. vim.fn.fnameescape(global_cwd)) end
 
 for _, key in ipairs({ "A", "B", "G", "D", "E", "Z", "H", "T", "I", "K" }) do
-    vim.keymap.set("n", "<leader>tg" .. key:lower(), function() switch_cwd_group(key) end)
+    vim.keymap.set("n", "<leader>tg" .. key:lower(), function() switch_cwd_group(key) end, {
+        desc = "Set tab working directory to group " .. greek_for_key(key),
+    })
 end
-vim.keymap.set("n", "<leader>tgG", switch_to_global_cwd)
+vim.keymap.set(
+    "n",
+    "<leader>tgG",
+    switch_to_global_cwd,
+    { desc = "Reset tab to global working directory" }
+)
 
 local function rtl_components(dir)
     local parts = {}

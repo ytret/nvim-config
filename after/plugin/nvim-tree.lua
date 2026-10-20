@@ -150,7 +150,12 @@ vim.api.nvim_create_autocmd("ColorScheme", {
     callback = clear_file_icon_background,
 })
 
-vim.keymap.set("n", "<leader>pv", vim.cmd.NvimTreeFindFileToggle)
+vim.keymap.set(
+    "n",
+    "<leader>pv",
+    vim.cmd.NvimTreeFindFileToggle,
+    { desc = "Toggle file tree at current file" }
+)
 
 vim.api.nvim_create_autocmd("VimResized", {
     desc = "Resize nvim-tree when Neovim window is resized",

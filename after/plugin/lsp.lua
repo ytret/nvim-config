@@ -156,41 +156,51 @@ vim.api.nvim_create_autocmd("LspAttach", {
     desc = "LSP actions",
     callback = function(args)
         local client = assert(vim.lsp.get_client_by_id(args.data.client_id))
-        local opts = { buffer = args.buf, remap = false }
+        local function opts(desc) return { buffer = args.buf, remap = false, desc = desc } end
 
-        vim.keymap.set("n", "go", def_in_other_win, opts)
-        vim.keymap.set("n", "gtn", def_in_new_tab, opts)
-        vim.keymap.set("n", "gto", def_in_new_tab, opts)
-        vim.keymap.set("n", "gt1", function() def_in_tab(1) end, opts)
-        vim.keymap.set("n", "gt2", function() def_in_tab(2) end, opts)
-        vim.keymap.set("n", "gt3", function() def_in_tab(3) end, opts)
-        vim.keymap.set("n", "gt4", function() def_in_tab(4) end, opts)
-        vim.keymap.set("n", "gt5", function() def_in_tab(5) end, opts)
-        vim.keymap.set("n", "gt6", function() def_in_tab(6) end, opts)
-        vim.keymap.set("n", "gt7", function() def_in_tab(7) end, opts)
-        vim.keymap.set("n", "gt8", function() def_in_tab(8) end, opts)
-        vim.keymap.set("n", "gt9", function() def_in_tab(9) end, opts)
-        vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
-        vim.keymap.set("n", "<leader>vd", vim.diagnostic.open_float, opts)
+        vim.keymap.set("n", "go", def_in_other_win, opts("Definition in another window"))
+        vim.keymap.set("n", "gtn", def_in_new_tab, opts("Definition in new tab"))
+        vim.keymap.set("n", "gto", def_in_new_tab, opts("Definition in new tab"))
+        vim.keymap.set("n", "gt1", function() def_in_tab(1) end, opts("Definition in tab 1"))
+        vim.keymap.set("n", "gt2", function() def_in_tab(2) end, opts("Definition in tab 2"))
+        vim.keymap.set("n", "gt3", function() def_in_tab(3) end, opts("Definition in tab 3"))
+        vim.keymap.set("n", "gt4", function() def_in_tab(4) end, opts("Definition in tab 4"))
+        vim.keymap.set("n", "gt5", function() def_in_tab(5) end, opts("Definition in tab 5"))
+        vim.keymap.set("n", "gt6", function() def_in_tab(6) end, opts("Definition in tab 6"))
+        vim.keymap.set("n", "gt7", function() def_in_tab(7) end, opts("Definition in tab 7"))
+        vim.keymap.set("n", "gt8", function() def_in_tab(8) end, opts("Definition in tab 8"))
+        vim.keymap.set("n", "gt9", function() def_in_tab(9) end, opts("Definition in tab 9"))
+        vim.keymap.set("n", "K", vim.lsp.buf.hover, opts("Hover documentation"))
+        vim.keymap.set(
+            "n",
+            "<leader>vd",
+            vim.diagnostic.open_float,
+            opts("Show diagnostic details")
+        )
         vim.keymap.set(
             "n",
             "[d",
             function() vim.diagnostic.jump({ count = -1, float = true }) end,
-            opts
+            opts("Previous diagnostic")
         )
         vim.keymap.set(
             "n",
             "]d",
             function() vim.diagnostic.jump({ count = 1, float = true }) end,
-            opts
+            opts("Next diagnostic")
         )
-        vim.keymap.set("n", "<leader>vca", vim.lsp.buf.code_action, opts)
-        vim.keymap.set("n", "<leader>vrn", vim.lsp.buf.rename, opts)
-        vim.keymap.set("i", "<C-h>", vim.lsp.buf.signature_help, opts)
+        vim.keymap.set("n", "<leader>vca", vim.lsp.buf.code_action, opts("Code action"))
+        vim.keymap.set("n", "<leader>vrn", vim.lsp.buf.rename, opts("Rename symbol"))
+        vim.keymap.set("i", "<C-h>", vim.lsp.buf.signature_help, opts("Signature help"))
 
         if client.name == "clangd" then
-            vim.keymap.set("n", "<leader>o", switch_src_hdr, opts)
-            vim.keymap.set("n", "<leader>O", function() switch_src_hdr(true) end, opts)
+            vim.keymap.set("n", "<leader>o", switch_src_hdr, opts("Switch source/header"))
+            vim.keymap.set(
+                "n",
+                "<leader>O",
+                function() switch_src_hdr(true) end,
+                opts("Switch source/header in another window")
+            )
         end
     end,
 })

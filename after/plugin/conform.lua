@@ -22,4 +22,9 @@ conform.formatters.nixfmt = {
     prepend_args = { "--width", "80" },
 }
 
-vim.keymap.set("", "<leader>f", function() conform.format() end)
+vim.keymap.set(
+    "",
+    "<leader>f",
+    function() conform.format() end,
+    { desc = "Format buffer or selection" }
+)

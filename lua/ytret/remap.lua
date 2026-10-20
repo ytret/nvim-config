@@ -1,37 +1,42 @@
 vim.g.mapleader = " "
 
-vim.keymap.set("n", "<Space>", "<Nop>", { silent = true })
+vim.keymap.set("n", "<Space>", "<Nop>", { silent = true, desc = "Leader key" })
 
-vim.keymap.set("n", "J", "mzJ`z")
-vim.keymap.set("n", "<C-u>", "<C-u>zz")
-vim.keymap.set("n", "<C-d>", "<C-d>zz")
-vim.keymap.set("n", "n", "nzzzv")
-vim.keymap.set("n", "N", "Nzzzv")
-vim.keymap.set("n", "Q", "<nop>")
-vim.keymap.set("n", "<leader>bd", ":b# | bd #<cr>")
+vim.keymap.set("n", "J", "mzJ`z", { desc = "Join lines without moving cursor" })
+vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Scroll up half a page and center" })
+vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "Scroll down half a page and center" })
+vim.keymap.set("n", "n", "nzzzv", { desc = "Next search match and center" })
+vim.keymap.set("n", "N", "Nzzzv", { desc = "Previous search match and center" })
+vim.keymap.set("n", "Q", "<nop>", { desc = "Disable Ex mode" })
+vim.keymap.set(
+    "n",
+    "<leader>bd",
+    ":b# | bd #<cr>",
+    { desc = "Delete buffer and switch to alternate" }
+)
 
-vim.keymap.set("n", "<leader>wq", vim.cmd.quit)
-vim.keymap.set("n", "<leader>wv", vim.cmd.vsplit)
-vim.keymap.set("n", "<leader>wn", vim.cmd.vsplit)
-vim.keymap.set("n", "<leader>ws", vim.cmd.split)
-vim.keymap.set("n", "<leader>wo", vim.cmd.only)
-vim.keymap.set("n", "<leader>wh", ":vert help ")
+vim.keymap.set("n", "<leader>wq", vim.cmd.quit, { desc = "Close window" })
+vim.keymap.set("n", "<leader>wv", vim.cmd.vsplit, { desc = "Split window vertically" })
+vim.keymap.set("n", "<leader>wn", vim.cmd.vsplit, { desc = "Split window vertically" })
+vim.keymap.set("n", "<leader>ws", vim.cmd.split, { desc = "Split window horizontally" })
+vim.keymap.set("n", "<leader>wo", vim.cmd.only, { desc = "Close other windows" })
+vim.keymap.set("n", "<leader>wh", ":vert help ", { desc = "Open help in vertical split" })
 
-vim.keymap.set("", "<leader>y", '"+y')
-vim.keymap.set("", "<leader>Y", '"+Y')
-vim.keymap.set("", "<leader>qy", '"+y')
-vim.keymap.set("", "<leader>qY", '"+Y')
-vim.keymap.set("", "<leader>qd", '"+d')
-vim.keymap.set("", "<leader>qD", '"+D')
-vim.keymap.set("", "<leader>qp", '"+p')
-vim.keymap.set("", "<leader>qP", '"+P')
+vim.keymap.set("", "<leader>y", '"+y', { desc = "Yank to system clipboard" })
+vim.keymap.set("", "<leader>Y", '"+Y', { desc = "Yank line to system clipboard" })
+vim.keymap.set("", "<leader>qy", '"+y', { desc = "Yank to system clipboard" })
+vim.keymap.set("", "<leader>qY", '"+Y', { desc = "Yank line to system clipboard" })
+vim.keymap.set("", "<leader>qd", '"+d', { desc = "Delete to system clipboard" })
+vim.keymap.set("", "<leader>qD", '"+D', { desc = "Delete to end of line to system clipboard" })
+vim.keymap.set("", "<leader>qp", '"+p', { desc = "Paste from system clipboard after cursor" })
+vim.keymap.set("", "<leader>qP", '"+P', { desc = "Paste from system clipboard before cursor" })
 
-vim.keymap.set("c", "<C-A>", "<Home>")
-vim.keymap.set("c", "<C-F>", "<Right>")
-vim.keymap.set("c", "<C-B>", "<Left>")
-vim.keymap.set("c", "<C-D>", "<Delete>")
-vim.keymap.set("c", "<Esc>f", "<S-Right>")
-vim.keymap.set("c", "<Esc>b", "<S-Left>")
+vim.keymap.set("c", "<C-A>", "<Home>", { desc = "Go to start of command line" })
+vim.keymap.set("c", "<C-F>", "<Right>", { desc = "Move right on command line" })
+vim.keymap.set("c", "<C-B>", "<Left>", { desc = "Move left on command line" })
+vim.keymap.set("c", "<C-D>", "<Delete>", { desc = "Delete character on command line" })
+vim.keymap.set("c", "<Esc>f", "<S-Right>", { desc = "Next word on command line" })
+vim.keymap.set("c", "<Esc>b", "<S-Left>", { desc = "Previous word on command line" })
 
 -- Delete a single char, not a whole indent level. By default <BS> eats a full
 -- 'softtabstop'/'shiftwidth' worth of indentation (see 'smarttab' + 'softtabstop').
@@ -63,8 +68,8 @@ local function delete_char_before_cursor()
         vim.api.nvim_win_set_cursor(0, { row - 1, #prev })
     end
 end
-vim.keymap.set("i", "<BS>", delete_char_before_cursor)
-vim.keymap.set("i", "<C-h>", delete_char_before_cursor)
+vim.keymap.set("i", "<BS>", delete_char_before_cursor, { desc = "Delete previous character" })
+vim.keymap.set("i", "<C-h>", delete_char_before_cursor, { desc = "Delete previous character" })
 
 -- Remove whitespace (preserves cursor position, no jumplist/mark pollution)
 vim.keymap.set("n", "<leader>rw", function()
