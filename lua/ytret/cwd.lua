@@ -6,7 +6,7 @@ local tabs = require("ytret.tabs")
 local state
 
 -- Keep the hint footer fully visible in the smallest window.
-local FOOTER_HINT = " <CR> cd   <S-CR>/<C-e> tcd   <Esc> cancel "
+local FOOTER_HINT = " <CR> tcd   <S-CR>/<C-e> cd   <Esc> cancel "
 local MIN_WIDTH = #FOOTER_HINT + 2
 -- Preferred number of list rows in the directory picker.
 local PICKER_ROWS = 16
@@ -434,8 +434,8 @@ local function set_maps(buf)
     local function imap(lhs, fn, desc)
         vim.keymap.set("i", lhs, fn, { buffer = buf, nowait = true, desc = desc })
     end
-    imap("<CR>", function() accept("global") end, "Set global working directory")
-    imap("<S-CR>", function() accept("tabpage") end, "Set tab working directory")
+    imap("<CR>", function() accept("tabpage") end, "Set tab working directory")
+    imap("<S-CR>", function() accept("global") end, "Set global working directory")
     imap("<C-e>", function() accept("tabpage") end, "Set tab working directory")
     imap("<C-w>", function()
         local line, col = buffer_line(), vim.api.nvim_win_get_cursor(state.win)[2]
@@ -460,7 +460,7 @@ local function set_maps(buf)
     vim.keymap.set("n", "<CR>", function() accept("global") end, {
         buffer = buf,
         nowait = true,
-        desc = "Set global working directory",
+        desc = "Set tab working directory",
     })
     vim.keymap.set("n", "<Esc>", close_prompt, {
         buffer = buf,
