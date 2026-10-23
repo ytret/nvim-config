@@ -8,6 +8,42 @@ vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "Scroll down half a page and ce
 vim.keymap.set("n", "n", "nzzzv", { desc = "Next search match and center" })
 vim.keymap.set("n", "N", "Nzzzv", { desc = "Previous search match and center" })
 vim.keymap.set("n", "Q", "<nop>", { desc = "Disable Ex mode" })
+vim.keymap.set("n", "<leader>go", function()
+    if vim.fn.executable("opengit") == 0 then
+        vim.notify("opengit: executable not found in PATH", vim.log.levels.ERROR)
+        return
+    end
+
+    local cwd = vim.fn.getcwd(-1, 0)
+    local args = { "opengit" }
+    local path = vim.api.nvim_buf_get_name(0)
+    if vim.bo.buftype == "" and path ~= "" then
+        vim.list_extend(args, { "--line", tostring(vim.api.nvim_win_get_cursor(0)[1]), path })
+    else
+        table.insert(args, cwd)
+    end
+
+    local ok, err = pcall(vim.system, args, { cwd = cwd, text = true }, function(result)
+        if result.code ~= 0 then
+            vim.schedule(function()
+                local detail = vim.trim(result.stderr or "")
+                if detail == "" then
+                    detail = "exited with code " .. result.code
+                end
+                vim.notify("opengit: " .. detail, vim.log.levels.ERROR)
+            end)
+        else
+            local url = (result.stdout or ""):match("https?://%S+")
+            if url then
+                vim.schedule(function() vim.notify("Open " .. url, vim.log.levels.INFO) end)
+            end
+        end
+    end)
+    if not ok then
+        vim.notify("opengit: " .. tostring(err), vim.log.levels.ERROR)
+    end
+end, { desc = "Open current file on Git remote" })
+
 vim.keymap.set(
     "n",
     "<leader>bd",
