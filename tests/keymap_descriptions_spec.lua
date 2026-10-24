@@ -48,7 +48,7 @@ local function assert_descriptions(mappings)
     end
 end
 
-describe("which-key mapping descriptions", function()
+describe("keymap descriptions", function()
     it(
         "describes general mappings",
         function() assert_descriptions(load_mappings("lua/ytret/remap.lua")) end
