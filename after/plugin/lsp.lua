@@ -213,6 +213,16 @@ require("mason-lspconfig").setup({
     },
 })
 
+local query_drivers = {
+    "/usr/bin/arm-none-eabi-gcc",
+    "i686-elf-gcc",
+    "/nix/**/i686-elf-gcc",
+    "/nix/**/clang*",
+    "/usr/bin/gcc",
+    "/usr/bin/clang",
+    "/home/omp.ru/y.tretyakov/dev/**/*gcc",
+}
+
 vim.lsp.config("clangd", {
     flags = {
         allow_incremental_sync = false,
@@ -220,7 +230,7 @@ vim.lsp.config("clangd", {
     cmd = {
         "/usr/bin/env",
         "clangd",
-        "--query-driver=/usr/bin/arm-none-eabi-gcc,i686-elf-gcc,/nix/**/i686-elf-gcc,/nix/**/clang*,/usr/bin/gcc,/usr/bin/clang,/home/omp.ru/y.tretyakov/dev/**/*gcc",
+        "--query-driver=" .. table.concat(query_drivers, ","),
         "--header-insertion=never",
     },
 })
