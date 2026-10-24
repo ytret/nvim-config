@@ -55,7 +55,7 @@ describe("other_or_new_win", function()
         package.loaded["mason"] = { setup = function() end }
         package.loaded["mason-lspconfig"] = { setup = function() end }
         package.loaded["luasnip"] = { lsp_expand = function() end }
-        vim.lsp.config = function() end
+        vim.lsp.config = function(_name, _cfg) end
 
         dofile("after/plugin/lsp.lua")
         local aucmds = vim.api.nvim_get_autocmds({ event = "LspAttach" })
@@ -150,7 +150,7 @@ describe("def_in_target", function()
                 return true
             end,
         }
-        vim.lsp.config = function() end
+        vim.lsp.config = function(_name, _cfg) end
         vim.lsp.util = vim.lsp.util or {}
         vim.lsp.util.make_position_params = function() return {} end
         vim.lsp.buf_request = function(_, _, _, h) handler = h end
