@@ -81,16 +81,20 @@ local function apply_theme(theme)
             )
         )
         local function apply_trailing_whitespace_match()
-            if vim.bo.buftype ~= "terminal" then
+            if
+                vim.bo.buftype ~= "terminal"
+                and vim.bo.filetype ~= "mason"
+                and vim.bo.filetype ~= "lazy"
+            then
                 vim.cmd([[ match MyTrailingWhitespace /\s\+$/ ]])
             else
-                -- Clear match in terminal buffers (e.g. lazygit)
+                -- Clear matches in terminals and plugin manager windows.
                 vim.cmd([[ match none ]])
             end
         end
         apply_trailing_whitespace_match()
         vim.api.nvim_create_augroup("YtretTrailingWhitespace", { clear = true })
-        vim.api.nvim_create_autocmd({ "WinNew", "BufWinEnter" }, {
+        vim.api.nvim_create_autocmd({ "WinNew", "BufWinEnter", "FileType" }, {
             group = "YtretTrailingWhitespace",
             callback = apply_trailing_whitespace_match,
         })

@@ -115,6 +115,39 @@ describe("autotheme", function()
         assert.is_not_nil(vim.api.nvim_get_hl(0, { name = "MyTrailingWhitespace" }).bg)
     end)
 
+    it("clears whitespace highlights when Mason and Lazy set their filetypes", function()
+        write_theme("dark\n")
+        YTRET_HIGHLIGHT = true
+        load_plugin()
+
+        local buf = vim.api.nvim_create_buf(false, true)
+        local win = vim.api.nvim_open_win(buf, true, {
+            relative = "editor",
+            row = 0,
+            col = 0,
+            width = 40,
+            height = 5,
+            style = "minimal",
+        })
+        table.insert(restore_fns, function()
+            if vim.api.nvim_win_is_valid(win) then
+                vim.api.nvim_win_close(win, true)
+            end
+            if vim.api.nvim_buf_is_valid(buf) then
+                vim.api.nvim_buf_delete(buf, { force = true })
+            end
+        end)
+
+        for _, filetype in ipairs({ "mason", "lazy" }) do
+            vim.bo[buf].filetype = "lua"
+            assert.equals("MyTrailingWhitespace", vim.fn.getmatches()[1].group)
+            vim.bo[buf].filetype = filetype
+            assert.same({}, vim.fn.getmatches())
+            vim.api.nvim_exec_autocmds("BufWinEnter", { buffer = buf })
+            assert.same({}, vim.fn.getmatches())
+        end
+    end)
+
     it("recovers from a pause between truncation and writing", function()
         write_theme("light\n")
         load_plugin()
