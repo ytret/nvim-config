@@ -170,7 +170,12 @@ vim.api.nvim_create_autocmd("LspAttach", {
         vim.keymap.set("n", "gt7", function() def_in_tab(7) end, opts("Definition in tab 7"))
         vim.keymap.set("n", "gt8", function() def_in_tab(8) end, opts("Definition in tab 8"))
         vim.keymap.set("n", "gt9", function() def_in_tab(9) end, opts("Definition in tab 9"))
-        vim.keymap.set("n", "K", vim.lsp.buf.hover, opts("Hover documentation"))
+        vim.keymap.set(
+            "n",
+            "K",
+            function() vim.lsp.buf.hover({ border = "rounded" }) end,
+            opts("Hover documentation")
+        )
         vim.keymap.set(
             "n",
             "<leader>vd",
