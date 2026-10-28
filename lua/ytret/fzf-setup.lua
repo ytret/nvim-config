@@ -246,6 +246,8 @@ function M.setup(opts)
             ["ctrl-t"] = with_picked_tab(lsp_file_edit_prefer_rel),
         },
         document_symbols = {
+            -- Keep source order while filtering instead of ranking by fuzzy score.
+            fzf_opts = { ["--no-sort"] = true },
             actions = {
                 ["ctrl-t"] = with_picked_tab(lsp_file_edit_prefer_rel),
             },
