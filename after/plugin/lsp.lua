@@ -226,6 +226,8 @@ local query_drivers = {
     "/usr/bin/gcc",
     "/usr/bin/clang",
     "/home/omp.ru/y.tretyakov/dev/**/*gcc",
+    "/home/omp.ru/y.tretyakov/mnt/**/*gcc",
+    "/home/omp.ru/y.tretyakov/_devices/**/*gcc",
 }
 
 vim.lsp.config("clangd", {
